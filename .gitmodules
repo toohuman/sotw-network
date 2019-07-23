@@ -1,3 +1,6 @@
 [submodule "CascadingFailure"]
 	path = CascadingFailure
 	url = git@gh-toohuman:T-BPhase/CascadingFailure
+[submodule "sotw"]
+	path = sotw
+	url = git@gh-toohuman:T-BPhase/sotw-ddm
