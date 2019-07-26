@@ -4,13 +4,11 @@ import numpy as np
 
 class Node(Agent):
 
-    belief          = None
-    evidence        = int
-    interactions    = int
-    since_change    = int
-    region          = None
-    region_boundary = None
+    identity = int
 
     def __init__(self, belief, position : int = None, agents : int = None, states : int = None):
 
-        super()
+        super().__init__(belief)
+
+    def move():
+        pass

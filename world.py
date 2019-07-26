@@ -46,16 +46,26 @@ def initialisation(
     the creation of agents and the initialisation of relevant variables.
     """
 
+    identity = 0
+
+    # Add the "node" agents to the list of agents first.
+    agents += [Node(init_beliefs(states)) for x in range(num_of_nodes * num_of_hubs)]
+    # Then add the "hub" agents.
+    agents += [Hub(init_beliefs(states)) for x in range(num_of_hubs)]
+    # Set agent's identity.
+    for a, agent in enumerate(agents):
+        agents[a].identity = identity
+        identity += 1
+
+    # Finally, generate a list of edges in which each hub is connected to all of its
+    # respective nodes and each hub is also connected to every other hub.
+    edges += [((num_of_hubs * num_of_nodes) + i, (i * num_of_nodes) + j) for i in range(num_of_hubs) for j in range(num_of_nodes)]
+    edges += [((num_of_hubs * num_of_nodes) + i, (num_of_hubs * num_of_nodes) + j) for i in range(num_of_hubs) for j in range(i + 1, num_of_hubs)]
+
+    # If the space is to be partitioned, then the agents need to be allocated a region.
     if partition:
         # TODO: Implement ...
         sys.exit(0)
-    else:
-        agents += [Node(init_beliefs(states)) for x in range(num_of_nodes)]
-        agents += [Hub(init_beliefs(states)) for x in range(num_of_hubs)]
-
-        edges += [(j, (j * num_of_nodes) + i) for j in range(num_of_hubs) for i in range(num_of_nodes)]
-
-        print(edges)
 
     return
 
@@ -178,6 +188,7 @@ def main():
             ]
         )
 
+        grid = [[[] for i in range(arguments.states)] for j in range(arguments.states)]
         agents = list()
         edges = list()
 
@@ -205,7 +216,7 @@ def main():
 
             max_iteration = iteration if iteration > max_iteration else max_iteration
             # While not converged, continue to run the main loop.
-            if main_loop(agents, arguments.states, true_state, exploration, mode, random_instance):
+            if main_loop(agents, edges, arguments.states, true_state, exploration, mode, random_instance):
                 for agent in agents:
                     loss_results[iteration][test] += results.loss(agent.belief, true_state)
 
