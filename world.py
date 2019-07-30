@@ -20,17 +20,14 @@ from utilities import results
 tests = 100
 iteration_limit = 5000
 steady_state_threshold = 100
+trajectory_views = 3
 
 mode = "symmetric" # ["symmetric" | "asymmetric"]
 evidence_only = False
 demo_mode = False
 
-# List of evidence rates
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
-# Set a single evidence rate to begin with, in case we don't test the whole list
-# and only want to experiment with a preset evidence rate.
 evidence_rate = 10/100
-# List of noise values: 0 would mean that evidence is always accurate.
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
 noise_value = 0.2 # None
 
@@ -70,7 +67,7 @@ def initialisation(
 
     return
 
-def main_loop(agents: [], edges: [], states: int, true_state: [], exploration: str, mode: str, random_instance):
+def main_loop(agents: [], edges: [], states: int, true_state: [], mode: str, random_instance):
     """
     The main loop performs various actions in sequence until certain conditions are
     met, or the maximum number of iterations is reached.
@@ -82,14 +79,15 @@ def main_loop(agents: [], edges: [], states: int, true_state: [], exploration: s
     reached_convergence = True
     for agent in agents:
 
-        if random_instance.random() <= evidence_rate:
+        # Hubs do not receive evidence, only updating their beliefs based on
+        # information from other nodes.
+        if isinstance(agent, Node) and random_instance.random() <= evidence_rate:
 
             # Currently, just testing with random evidence.
             evidence = beliefs.random_evidence(
                 agent.belief,
                 agent.region,
                 true_state,
-                exploration,
                 noise_value,
                 random_instance
             )
@@ -143,18 +141,7 @@ def main():
     parser.add_argument("states", type=int)
     parser.add_argument("-r", "--random", action="store_true", help="Random seeding of the RNG.")
     parser.add_argument("-p", "--partition", action="store_true", help="Partition agents into separate regions.")
-    parser.add_argument("-e", "--explore", action="store_true", help="Explore previously visited states, even if the agent holds a belief about them.")
-    parser.add_argument("-er", "--explore-randomly", action="store_true", help="Explore states uniformly at random.")
     arguments = parser.parse_args()
-
-    exploration = None
-
-    if arguments.explore and arguments.explore_randomly:
-        sys.exit("Cannot have multiple exploration methods active.")
-    elif arguments.explore:
-        exploration = "revisit"
-    elif arguments.explore_randomly:
-        exploration = "random"
 
     # Create an instance of a RNG that is either seeded for consistency of simulation
     # results, or create using a random seed for further testing.
@@ -178,7 +165,18 @@ def main():
     node_loss_results = np.copy(global_loss_results)
     hub_loss_results = np.copy(global_loss_results)
 
+    sotw_view_indices = random_instance.sample(range(tests), trajectory_views)
+    global_sotw_view = np.array(
+        [
+            [
+                [float() for x in range(arguments.states)]
+                for y in range(arguments.states)
+            ] for _ in range(trajectory_views)
+        ]
+    )
+
     # Repeat the initialisation and loop for the number of simulation runs required
+    sotw_index = -1
     max_iteration = 0
     for test in range(tests):
 
@@ -215,6 +213,9 @@ def main():
             elif isinstance(agent, Hub):
                 hub_loss_results[0][test] += results.loss(agent.belief, true_state)
 
+        if test in sotw_view_indices:
+            sotw_index = sotw_view_indices.index(test)
+
         # Main loop of the experiments. Starts at 1 because we have recorded the agents'
         # initial state above, at the "0th" index.
         for iteration in range(1, iteration_limit + 1):
@@ -222,7 +223,7 @@ def main():
 
             max_iteration = iteration if iteration > max_iteration else max_iteration
             # While not converged, continue to run the main loop.
-            if main_loop(agents, edges, arguments.states, true_state, exploration, mode, random_instance):
+            if main_loop(agents, edges, arguments.states, true_state, mode, random_instance):
                 for agent in agents:
                     global_loss_results[iteration][test] += results.loss(agent.belief, true_state)
                     if isinstance(agent, Node):
@@ -262,10 +263,6 @@ def main():
         file_name_params.append("{:.3f}_nv".format(noise_value))
     if arguments.partition:
         file_name_params.append("part")
-    if arguments.explore:
-        file_name_params.append("xplr")
-    if arguments.explore_randomly:
-        file_name_params.append("xplr_rand")
 
     results.write_to_file(
         directory,
