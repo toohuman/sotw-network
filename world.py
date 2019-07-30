@@ -1,4 +1,5 @@
 import argparse
+import copy
 import importlib
 import random
 import sys
@@ -53,7 +54,7 @@ def initialisation(
     # Then add the "hub" agents.
     agents += [Hub(init_beliefs(states)) for x in range(num_of_hubs)]
     # Set agent's identity.
-    for a, agent in enumerate(agents):
+    for a in range(len(agents)):
         agents[a].identity = identity
         identity += 1
 
@@ -106,10 +107,9 @@ def main_loop(agents: [], edges: [], states: int, true_state: [], exploration: s
 
     # Symmetric
     if mode == "symmetric":
-        agent1 = agents[random_instance.randint(0,len(agents) - 1)]
-        agent2 = agent1
-        while agent2 == agent1:
-            agent2 = agents[random_instance.randint(0,len(agents) - 1)]
+        chosen_nodes = random_instance.choice(edges)
+
+        agent1, agent2 = agents[chosen_nodes[0]], agents[chosen_nodes[1]]
 
         new_belief = operators.combine(agent1.belief, agent2.belief)
 
@@ -141,7 +141,7 @@ def main():
     # Hubs: Number of hub nodes (e.g., ships) to allocate - the k in k-means partitioning.
     parser.add_argument("hubs", type=int)
     parser.add_argument("states", type=int)
-    parser.add_argument("-r", "--random", type=bool, help="Random seeding of the RNG.")
+    parser.add_argument("-r", "--random", action="store_true", help="Random seeding of the RNG.")
     parser.add_argument("-p", "--partition", action="store_true", help="Partition agents into separate regions.")
     parser.add_argument("-e", "--explore", action="store_true", help="Explore previously visited states, even if the agent holds a belief about them.")
     parser.add_argument("-er", "--explore-randomly", action="store_true", help="Explore states uniformly at random.")
@@ -159,10 +159,10 @@ def main():
     # Create an instance of a RNG that is either seeded for consistency of simulation
     # results, or create using a random seed for further testing.
     random_instance = random.Random()
-    random_instance.seed(128) if arguments.random == None else random_instance.seed()
+    random_instance.seed(128) if arguments.random == False else random_instance.seed()
 
     # Output variables
-    directory = "../results/test_results/sotw/"
+    directory = "../results/test_results/sotw-network/"
     file_name_params = []
 
     global evidence_rate
@@ -171,10 +171,12 @@ def main():
     print("Evidence rate:", evidence_rate)
     print("Noise value:", noise_value)
 
-    loss_results = [
+    global_loss_results = [
         [ 0.0 for y in range(tests) ] for z in range(iteration_limit + 1)
     ]
-    loss_results = np.array(loss_results)
+    global_loss_results = np.array(global_loss_results)
+    node_loss_results = np.copy(global_loss_results)
+    hub_loss_results = np.copy(global_loss_results)
 
     # Repeat the initialisation and loop for the number of simulation runs required
     max_iteration = 0
@@ -207,7 +209,11 @@ def main():
 
         # Pre-loop results based on agent initialisation.
         for agent in agents:
-            loss_results[0][test] += results.loss(agent.belief, true_state)
+            global_loss_results[0][test] += results.loss(agent.belief, true_state)
+            if isinstance(agent, Node):
+                node_loss_results[0][test] += results.loss(agent.belief, true_state)
+            elif isinstance(agent, Hub):
+                hub_loss_results[0][test] += results.loss(agent.belief, true_state)
 
         # Main loop of the experiments. Starts at 1 because we have recorded the agents'
         # initial state above, at the "0th" index.
@@ -218,24 +224,38 @@ def main():
             # While not converged, continue to run the main loop.
             if main_loop(agents, edges, arguments.states, true_state, exploration, mode, random_instance):
                 for agent in agents:
-                    loss_results[iteration][test] += results.loss(agent.belief, true_state)
+                    global_loss_results[iteration][test] += results.loss(agent.belief, true_state)
+                    if isinstance(agent, Node):
+                        node_loss_results[iteration][test] += results.loss(agent.belief, true_state)
+                    elif isinstance(agent, Hub):
+                        hub_loss_results[iteration][test] += results.loss(agent.belief, true_state)
 
             # If the simulation has converged, end the test.
             else:
                 # print("Converged: ", iteration)
                 for agent in agents:
-                    loss_results[iteration][test] += results.loss(agent.belief, true_state)
+                    global_loss_results[iteration][test] += results.loss(agent.belief, true_state)
+                    if isinstance(agent, Node):
+                        node_loss_results[iteration][test] += results.loss(agent.belief, true_state)
+                    elif isinstance(agent, Hub):
+                        hub_loss_results[iteration][test] += results.loss(agent.belief, true_state)
+
                 for iter in range(iteration + 1, iteration_limit + 1):
-                    loss_results[iter][test] = np.copy(loss_results[iteration][test])
+                    global_loss_results[iter][test] = np.copy(global_loss_results[iteration][test])
+                    node_loss_results[iter][test] = np.copy(node_loss_results[iteration][test])
+                    hub_loss_results[iter][test] = np.copy(hub_loss_results[iteration][test])
                 # Simulation has converged, so break main loop.
                 break
     print()
 
     # Post-loop results processing (normalisation).
-    loss_results /= len(agents)
+    global_loss_results /= len(agents)
+    node_loss_results /= arguments.nodes
+    hub_loss_results /= arguments.hubs
 
     # Recording of results. First, add parameters in sequence.
-    file_name_params.append("{}_agents".format(arguments.agents))
+    file_name_params.append("{}_nodes".format(arguments.nodes * arguments.hubs))
+    file_name_params.append("{}_hubs".format(arguments.hubs))
     file_name_params.append("{}_states".format(arguments.states))
     file_name_params.append("{:.3f}_er".format(evidence_rate))
     if noise_value is not None:
@@ -251,14 +271,25 @@ def main():
         directory,
         "loss",
         file_name_params,
-        loss_results,
+        global_loss_results,
         max_iteration
     )
 
-    # if demo_mode:
-        # Output plots while running simulations, but do not record the results.
-    # else:
-        # Record the results but skip the plotting.
+    results.write_to_file(
+        directory,
+        "node_loss",
+        file_name_params,
+        node_loss_results,
+        max_iteration
+    )
+
+    results.write_to_file(
+        directory,
+        "hub_loss",
+        file_name_params,
+        hub_loss_results,
+        max_iteration
+    )
 
 
 if __name__ == "__main__":

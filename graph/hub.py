@@ -6,4 +6,4 @@ class Hub(Agent):
 
     def __init__(self, belief, position : int = None, agents : int = None, states : int = None):
 
-        super()
+        super().__init__(belief)
