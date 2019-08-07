@@ -79,7 +79,7 @@ def main_loop(agents: [], edges: [], states: int, true_state: [], mode: str, ran
     reached_convergence = True
     for agent in agents:
 
-        # Hubs do not receive evidence, only updating their beliefs based on
+        # Hubs do not receive direct evidence, only updating their beliefs based on
         # information from other nodes.
         if isinstance(agent, Node) and random_instance.random() <= evidence_rate:
 
@@ -169,8 +169,13 @@ def main():
     global_sotw_view = np.array(
         [
             [
-                [float() for x in range(arguments.states)]
-                for y in range(arguments.states)
+                [
+                    [
+                        float() for _ in range(
+                            arguments.hubs +
+                            (arguments.nodes * arguments.hubs)
+                    ] for _ in range(arguments.states)
+                ] for _ in range(arguments.states)
             ] for _ in range(trajectory_views)
         ]
     )
