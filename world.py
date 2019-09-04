@@ -174,6 +174,7 @@ def main():
                         float() for _ in range(
                             arguments.hubs +
                             (arguments.nodes * arguments.hubs)
+                        )
                     ] for _ in range(arguments.states)
                 ] for _ in range(arguments.states)
             ] for _ in range(trajectory_views)
