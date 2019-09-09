@@ -6,8 +6,9 @@ import seaborn as sns; sns.set()
 PERC_LOWER = 10
 PERC_UPPER = 90
 
-states_set = [5, 10, 20, 50, 100]
-agents_set = [10, 100]
+states_set = [10]
+hubs_set = [1, 2, 3, 4, 5]
+nodes_set = [10]
 noise_values = [0/100, 5/100, 10/100, 20/100, 30/100, 40/100, 50/100]
 er = 0.05
 
@@ -24,7 +25,9 @@ for noise in noise_values:
         noise_input_string += "_{:.3f}_nv".format(noise)
         noise_output_string += "_{}_nv".format(noise)
 
-    loss_results = np.array([[[0.0 for z in iterations] for y in agents_set] for x in states_set])
+    hub_loss_results = np.array([[[0.0 for z in iterations] for y in hubs_set] for x in states_set])
+    nodes_loss_results = np.array([[[0.0 for z in iterations] for y in nodes_set] for x in states_set])
+    nodes_loss_results = np.array([[[0.0 for z in iterations] for y in nodes_set] for x in states_set])
     labels = [["" for x in agents_set] for y in states_set]
 
     for i, states in enumerate(states_set):

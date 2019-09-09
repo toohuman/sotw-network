@@ -257,7 +257,7 @@ def main():
 
     # Post-loop results processing (normalisation).
     global_loss_results /= len(agents)
-    node_loss_results /= arguments.nodes
+    node_loss_results /= arguments.nodes * arguments.hubs
     hub_loss_results /= arguments.hubs
 
     # Recording of results. First, add parameters in sequence.
