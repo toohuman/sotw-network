@@ -52,7 +52,7 @@ def initialisation(
     agents += [Hub(init_beliefs(states)) for x in range(num_of_hubs)]
     # Set agent's identity.
     for a in range(len(agents)):
-        agents[a].identity = identity
+        agents[a].set_identity = identity
         identity += 1
 
     # Finally, generate a list of edges in which each hub is connected to all of its
