@@ -9,7 +9,7 @@ PERC_UPPER = 90
 
 states_set = [10]
 hubs_set = [1, 2, 3, 4, 5]
-nodes_set = [10]
+nodes_set = [10, 20, 30, 40, 50]
 noise_values = [0/100, 5/100, 10/100, 20/100, 30/100, 40/100, 50/100]
 er = 0.1
 
@@ -98,13 +98,13 @@ for noise in noise_values:
             for k, hubs in enumerate(hubs_set):
                 if combined_loss_results[i][j][k][0] == 0:
                     continue
-                ax = plt.plot(iterations, combined_loss_results[i][j][k], linewidth = 2, label="Combined")
                 ax = plt.plot(iterations, hub_loss_results[i][j][k], linewidth = 2, label="Hub")
                 ax = plt.plot(iterations, node_loss_results[i][j][k], linewidth = 2, label="Node")
+                ax = plt.plot(iterations, combined_loss_results[i][j][k], linewidth = 2, label="Combined")
                 plt.xlabel("Iterations")
                 plt.ylabel("Average Loss")
                 plt.ylim(-0.01, 0.51)
-                plt.title("{0} hub(s), {1} nodes, {2}x{2} states".format(hubs, nodes, states))
+                plt.title("{} hub(s), {} nodes, {} states".format(hubs, hubs * nodes, states**2))
                 plt.legend()
                 # plt.show()
                 plt.savefig("../../results/graphs/sotw-network/{}_hubs_{}_nodes_{}_er_{}_noise.pdf".format(hubs, hubs * nodes, er, noise))
