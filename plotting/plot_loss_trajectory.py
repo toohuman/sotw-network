@@ -98,8 +98,8 @@ for noise in noise_values:
             for k, hubs in enumerate(hubs_set):
                 if combined_loss_results[i][j][k][0] == 0:
                     continue
-                ax = plt.plot(iterations, hub_loss_results[i][j][k], linewidth = 2, label="Hub")
-                ax = plt.plot(iterations, node_loss_results[i][j][k], linewidth = 2, label="Node")
+                ax = plt.plot(iterations, hub_loss_results[i][j][k], linestyle="dashed", linewidth = 2, label="Hub")
+                ax = plt.plot(iterations, node_loss_results[i][j][k], linestyle="dashed", linewidth = 2, label="Node")
                 ax = plt.plot(iterations, combined_loss_results[i][j][k], linewidth = 2, label="Combined")
                 plt.xlabel("Iterations")
                 plt.ylabel("Average Loss")
