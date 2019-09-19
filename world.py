@@ -36,8 +36,8 @@ noise_value = 0.2 # None
 init_beliefs = beliefs.ignorant_belief_generator
 
 def initialisation(
-        num_of_nodes, num_of_hubs, states, agents: [], edges: [],
-        partition: bool, random_instance
+    num_of_nodes, num_of_hubs, states, agents: [], edges: [],
+    partition: bool, random_instance
 ):
     """
     This initialisation function runs before any other part of the code. Starting with
@@ -67,7 +67,9 @@ def initialisation(
 
     return
 
-def main_loop(agents: [], edges: [], states: int, true_state: [], mode: str, random_instance):
+def main_loop(
+    agents: [], edges: [], states: int, true_state: [], mode: str, random_instance
+):
     """
     The main loop performs various actions in sequence until certain conditions are
     met, or the maximum number of iterations is reached.
