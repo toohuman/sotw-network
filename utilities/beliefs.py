@@ -2,7 +2,7 @@ import random
 
 import numpy as np
 
-def ignorant_belief_generator(states):
+def ignorant_belief(states):
     """ Returns an empty belief matrix to denote complete uncertainty. """
 
     return np.full((states, states), 0, int)

@@ -27,13 +27,13 @@ evidence_only = False
 demo_mode = False
 
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
-evidence_rate = 10/100
+evidence_rate = 100/100
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
 noise_value = 0.2 # None
 
 # Set the initialisation function for agent beliefs - option to add additional
 # initialisation functions later.
-init_beliefs = beliefs.ignorant_belief_generator
+init_beliefs = beliefs.ignorant_belief
 
 def initialisation(
     num_of_nodes, num_of_hubs, states, agents: [], edges: [],
