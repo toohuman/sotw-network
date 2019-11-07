@@ -8,14 +8,17 @@ PERC_LOWER = 10
 PERC_UPPER = 90
 
 states_set = [10]
-hubs_set = [1, 2, 3, 4, 5]
-nodes_set = [10, 20, 30, 40, 50]
+# hubs_set = [1, 2, 3, 4, 5, 10, 50]
+# nodes_set = [1, 5, 10, 20, 30, 40, 50]
+hubs_set = [50]
+nodes_set = [1]
 noise_values = [0/100, 5/100, 10/100, 20/100, 30/100, 40/100, 50/100]
 er = 0.1
 
 result_directory = "../../results/test_results/sotw-network/"
 
-iterations = [x for x in range(1000)]
+# iterations = [x for x in range(1000)]
+iterations = [x for x in range(5000)]
 
 hub_node_combo = list(itertools.product(hubs_set, nodes_set))
 
