@@ -4,6 +4,3 @@
 [submodule "sotw"]
 	path = sotw
 	url = git@gh-toohuman:T-BPhase/sotw-ddm
-[submodule "networkx"]
-	path = networkx
-	url = git@github.com:networkx/networkx.git
