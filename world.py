@@ -1,6 +1,7 @@
 import argparse
 import copy
 import importlib
+import networkx as nx
 import random
 import sys
 
@@ -36,29 +37,44 @@ noise_value = 0.2 # None
 init_beliefs = beliefs.ignorant_belief
 
 def initialisation(
-    num_of_nodes, num_of_hubs, states, agents: [], edges: [],
-    partition: bool, random_instance
+    num_of_nodes, num_of_hubs, states, agents: [], graph, edges: [],
+    connectivity, partition: bool, random_instance
 ):
     """
     This initialisation function runs before any other part of the code. Starting with
     the creation of agents and the initialisation of relevant variables.
     """
 
-    identity = 0
+    # If there should be a separation of hubs from nodes, then use the standard implementation
+    # until an alternative networkx implementation has been written.
+    if num_of_hubs > 0:
+        identity = 0
 
-    # Add the "node" agents to the list of agents first.
-    agents += [Node(init_beliefs(states)) for x in range(num_of_nodes * num_of_hubs)]
-    # Then add the "hub" agents.
-    agents += [Hub(init_beliefs(states)) for x in range(num_of_hubs)]
-    # Set agent's identity.
-    for a in range(len(agents)):
-        agents[a].set_identity = identity
-        identity += 1
+        # Add the "node" agents to the list of agents first.
+        agents += [Node(init_beliefs(states)) for x in range(num_of_nodes * num_of_hubs)]
+        # Then add the "hub" agents.
+        agents += [Hub(init_beliefs(states)) for x in range(num_of_hubs)]
+        # Set agent's identity.
+        for a in range(len(agents)):
+            agents[a].set_identity = identity
+            identity += 1
 
-    # Finally, generate a list of edges in which each hub is connected to all of its
-    # respective nodes and each hub is also connected to every other hub.
-    edges += [((num_of_hubs * num_of_nodes) + i, (i * num_of_nodes) + j) for i in range(num_of_hubs) for j in range(num_of_nodes)]
-    edges += [((num_of_hubs * num_of_nodes) + i, (num_of_hubs * num_of_nodes) + j) for i in range(num_of_hubs) for j in range(i + 1, num_of_hubs)]
+        # Finally, generate a list of edges in which each hub is connected to all of its
+        # respective nodes and each hub is also connected to every other hub.
+        edges += [((num_of_hubs * num_of_nodes) + i, (i * num_of_nodes) + j) for i in range(num_of_hubs) for j in range(num_of_nodes)]
+        edges += [((num_of_hubs * num_of_nodes) + i, (num_of_hubs * num_of_nodes) + j) for i in range(num_of_hubs) for j in range(i + 1, num_of_hubs)]
+
+        # A complete graph using networkx:
+        # graph = nx.complete_graph(agents)
+    else:
+        # When there are no hubs, implement random graphs with a connectivity parameter k
+        identity = 0
+
+        # Add the "node" agents to the list of agents first.
+        agents = [Node(init_beliefs(states)) for x in range(num_of_nodes)]
+        
+        graph.add_node(agents)
+        graph.gnp_random_graph(len(agents), connectivity, random_instance)
 
     # If the space is to be partitioned, then the agents need to be allocated a region.
     if partition:
@@ -134,16 +150,25 @@ def main():
     """
 
     # Parse the arguments of the program, e.g., agents, states, random init.
-    parser = argparse.ArgumentParser(description="Distributed\
-    decision-making in a multi-agent environment in which agents must reach a consensus about the true state of the world.")
+    parser = argparse.ArgumentParser(description="Distributed decision-making\
+        in a multi-agent environment in which agents must reach a consensus\
+            about the true state of the world.")
+    parser.add_argument("states", type=int)
     # Nodes: Number of standard nodes (e.g., submarines).
     parser.add_argument("nodes", type=int)
     # Hubs: Number of hub nodes (e.g., ships) to allocate - the k in k-means partitioning.
-    parser.add_argument("hubs", type=int)
-    parser.add_argument("states", type=int)
+    parser.add_argument("--hubs", type=int, default=0,
+        help="Hubs are the pass-through nodes for other nodes.\
+        They do not receive direct evidence.")
     parser.add_argument("-r", "--random", action="store_true", help="Random seeding of the RNG.")
+    parser.add_argument("-c", "--connectivity", type=float, help="Connectivity of the random graph in [0,1],\
+        e.g., probability of an edge between any two nodes.")
     parser.add_argument("-p", "--partition", action="store_true", help="Partition agents into separate regions.")
     arguments = parser.parse_args()
+
+    if arguments.hubs == 0 and arguments.connectivity is None:
+        print("Usage error: Connectivity must be specified for node-only graph.")
+        sys.exit(0)
 
     # Create an instance of a RNG that is either seeded for consistency of simulation
     # results, or create using a random seed for further testing.
@@ -164,8 +189,8 @@ def main():
         [ 0.0 for y in range(tests) ] for z in range(iteration_limit + 1)
     ]
     global_loss_results = np.array(global_loss_results)
-    node_loss_results = np.copy(global_loss_results)
-    hub_loss_results = np.copy(global_loss_results)
+    # node_loss_results = np.copy(global_loss_results)
+    # hub_loss_results = np.copy(global_loss_results)
 
     sotw_view_indices = random_instance.sample(range(tests), trajectory_views)
     global_sotw_view = np.array(
@@ -199,6 +224,7 @@ def main():
         grid = [[[] for i in range(arguments.states)] for j in range(arguments.states)]
         agents = list()
         edges = list()
+        network = nx.Graph()
 
         # Initialise the agents and the environment.
         # If we are to partition the space, we need to assign agents regions of the
@@ -208,7 +234,9 @@ def main():
             arguments.hubs,
             arguments.states,
             agents,
+            network,
             edges,
+            arguments.connectivity,
             arguments.partition,
             random_instance
         )
@@ -216,10 +244,10 @@ def main():
         # Pre-loop results based on agent initialisation.
         for agent in agents:
             global_loss_results[0][test] += results.loss(agent.belief, true_state)
-            if isinstance(agent, Node):
-                node_loss_results[0][test] += results.loss(agent.belief, true_state)
-            elif isinstance(agent, Hub):
-                hub_loss_results[0][test] += results.loss(agent.belief, true_state)
+            # if isinstance(agent, Node):
+            #     node_loss_results[0][test] += results.loss(agent.belief, true_state)
+            # elif isinstance(agent, Hub):
+            #     hub_loss_results[0][test] += results.loss(agent.belief, true_state)
 
         if test in sotw_view_indices:
             sotw_index = sotw_view_indices.index(test)
@@ -234,33 +262,33 @@ def main():
             if main_loop(agents, edges, arguments.states, true_state, mode, random_instance):
                 for agent in agents:
                     global_loss_results[iteration][test] += results.loss(agent.belief, true_state)
-                    if isinstance(agent, Node):
-                        node_loss_results[iteration][test] += results.loss(agent.belief, true_state)
-                    elif isinstance(agent, Hub):
-                        hub_loss_results[iteration][test] += results.loss(agent.belief, true_state)
+                    # if isinstance(agent, Node):
+                    #     node_loss_results[iteration][test] += results.loss(agent.belief, true_state)
+                    # elif isinstance(agent, Hub):
+                    #     hub_loss_results[iteration][test] += results.loss(agent.belief, true_state)
 
             # If the simulation has converged, end the test.
             else:
                 # print("Converged: ", iteration)
                 for agent in agents:
                     global_loss_results[iteration][test] += results.loss(agent.belief, true_state)
-                    if isinstance(agent, Node):
-                        node_loss_results[iteration][test] += results.loss(agent.belief, true_state)
-                    elif isinstance(agent, Hub):
-                        hub_loss_results[iteration][test] += results.loss(agent.belief, true_state)
+                    # if isinstance(agent, Node):
+                    #     node_loss_results[iteration][test] += results.loss(agent.belief, true_state)
+                    # elif isinstance(agent, Hub):
+                    #     hub_loss_results[iteration][test] += results.loss(agent.belief, true_state)
 
                 for iter in range(iteration + 1, iteration_limit + 1):
                     global_loss_results[iter][test] = np.copy(global_loss_results[iteration][test])
-                    node_loss_results[iter][test] = np.copy(node_loss_results[iteration][test])
-                    hub_loss_results[iter][test] = np.copy(hub_loss_results[iteration][test])
+                    # node_loss_results[iter][test] = np.copy(node_loss_results[iteration][test])
+                    # hub_loss_results[iter][test] = np.copy(hub_loss_results[iteration][test])
                 # Simulation has converged, so break main loop.
                 break
     print()
 
     # Post-loop results processing (normalisation).
     global_loss_results /= len(agents)
-    node_loss_results /= arguments.nodes * arguments.hubs
-    hub_loss_results /= arguments.hubs
+    # node_loss_results /= arguments.nodes * arguments.hubs
+    # hub_loss_results /= arguments.hubs
 
     # Recording of results. First, add parameters in sequence.
     file_name_params.append("{}_nodes".format(arguments.nodes * arguments.hubs))
@@ -280,21 +308,23 @@ def main():
         max_iteration
     )
 
-    results.write_to_file(
-        directory,
-        "node_loss",
-        file_name_params,
-        node_loss_results,
-        max_iteration
-    )
+    # TODO: Implement hub/node separation results using networkx.
 
-    results.write_to_file(
-        directory,
-        "hub_loss",
-        file_name_params,
-        hub_loss_results,
-        max_iteration
-    )
+    # results.write_to_file(
+    #     directory,
+    #     "node_loss",
+    #     file_name_params,
+    #     node_loss_results,
+    #     max_iteration
+    # )
+
+    # results.write_to_file(
+    #     directory,
+    #     "hub_loss",
+    #     file_name_params,
+    #     hub_loss_results,
+    #     max_iteration
+    # )
 
 
 if __name__ == "__main__":
