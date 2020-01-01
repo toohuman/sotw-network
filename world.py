@@ -36,8 +36,11 @@ noise_value = 0.2 # None
 # initialisation functions later.
 init_beliefs = beliefs.ignorant_belief
 
+# TODO:
+# 1. Remove separate agents(nodes) and edges lists, using only network instead.
+
 def initialisation(
-    num_of_nodes, num_of_hubs, states, agents: [], graph, edges: [],
+    num_of_nodes, num_of_hubs, states, agents: [], network, edges: [],
     connectivity, partition: bool, random_instance
 ):
     """
@@ -65,16 +68,15 @@ def initialisation(
         edges += [((num_of_hubs * num_of_nodes) + i, (num_of_hubs * num_of_nodes) + j) for i in range(num_of_hubs) for j in range(i + 1, num_of_hubs)]
 
         # A complete graph using networkx:
-        # graph = nx.complete_graph(agents)
+        # network = nx.complete_graph(agents)
     else:
         # When there are no hubs, implement random graphs with a connectivity parameter k
         identity = 0
 
         # Add the "node" agents to the list of agents first.
-        agents = [Node(init_beliefs(states)) for x in range(num_of_nodes)]
-        
-        graph.add_node(agents)
-        graph.gnp_random_graph(len(agents), connectivity, random_instance)
+        agents += [Node(init_beliefs(states)) for x in range(num_of_nodes)]
+        edges += nx.gnp_random_graph(len(agents), connectivity, random_instance).edges
+        network.update(edges, agents)
 
     # If the space is to be partitioned, then the agents need to be allocated a region.
     if partition:
@@ -160,9 +162,9 @@ def main():
     parser.add_argument("--hubs", type=int, default=0,
         help="Hubs are the pass-through nodes for other nodes.\
         They do not receive direct evidence.")
-    parser.add_argument("-r", "--random", action="store_true", help="Random seeding of the RNG.")
     parser.add_argument("-c", "--connectivity", type=float, help="Connectivity of the random graph in [0,1],\
         e.g., probability of an edge between any two nodes.")
+    parser.add_argument("-r", "--random", action="store_true", help="Random seeding of the RNG.")
     parser.add_argument("-p", "--partition", action="store_true", help="Partition agents into separate regions.")
     arguments = parser.parse_args()
 
