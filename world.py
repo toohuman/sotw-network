@@ -293,10 +293,20 @@ def main():
     # hub_loss_results /= arguments.hubs
 
     # Recording of results. First, add parameters in sequence.
-    file_name_params.append("{}_nodes".format(arguments.nodes * arguments.hubs))
-    file_name_params.append("{}_hubs".format(arguments.hubs))
+    # Old params
+    # file_name_params.append("{}_nodes".format(arguments.nodes * arguments.hubs))
+    # file_name_params.append("{}_hubs".format(arguments.hubs))
+    # file_name_params.append("{}_states".format(arguments.states))
+    # file_name_params.append("{:.3f}_er".format(evidence_rate))
+    # Networkx params
     file_name_params.append("{}_states".format(arguments.states))
-    file_name_params.append("{:.3f}_er".format(evidence_rate))
+    file_name_params.append("{}_nodes".format(arguments.nodes))
+    if arguments.hubs != 0:
+        file_name_params.append("{}_hubs".format(arguments.hubs))
+
+    if arguments.connectivity is not None:
+        file_name_params.append("{}_con".format(arguments.connectivity))
+
     if noise_value is not None:
         file_name_params.append("{:.3f}_nv".format(noise_value))
     if arguments.partition:
