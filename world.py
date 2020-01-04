@@ -57,8 +57,11 @@ def initialisation(
 
     # Finally, generate a list of edges in which each hub is connected to all of its
     # respective nodes and each hub is also connected to every other hub.
-    edges += [((num_of_hubs * num_of_nodes) + i, (i * num_of_nodes) + j) for i in range(num_of_hubs) for j in range(num_of_nodes)]
-    edges += [((num_of_hubs * num_of_nodes) + i, (num_of_hubs * num_of_nodes) + j) for i in range(num_of_hubs) for j in range(i + 1, num_of_hubs)]
+    if num_of_nodes > 0 and num_of_hubs > 0:
+        edges += [((num_of_hubs * num_of_nodes) + i, (i * num_of_nodes) + j) for i in range(num_of_hubs) for j in range(num_of_nodes)]
+        edges += [((num_of_hubs * num_of_nodes) + i, (num_of_hubs * num_of_nodes) + j) for i in range(num_of_hubs) for j in range(i + 1, num_of_hubs)]
+    else:
+        edges += [(i, j) for i in range(num_of_hubs) for j in range(i + 1, num_of_hubs)]
 
     # If the space is to be partitioned, then the agents need to be allocated a region.
     if partition:
@@ -83,7 +86,8 @@ def main_loop(
 
         # Hubs do not receive direct evidence, only updating their beliefs based on
         # information from other nodes.
-        if isinstance(agent, Node) and random_instance.random() <= evidence_rate:
+        # if isinstance(agent, Node) and random_instance.random() <= evidence_rate:
+        if random_instance.random() <= evidence_rate:
 
             # Currently, just testing with random evidence.
             evidence = beliefs.random_evidence(
@@ -259,8 +263,8 @@ def main():
 
     # Post-loop results processing (normalisation).
     global_loss_results /= len(agents)
-    node_loss_results /= arguments.nodes * arguments.hubs
-    hub_loss_results /= arguments.hubs
+    # node_loss_results /= arguments.nodes * arguments.hubs
+    # hub_loss_results /= arguments.hubs
 
     # Recording of results. First, add parameters in sequence.
     file_name_params.append("{}_nodes".format(arguments.nodes * arguments.hubs))
@@ -280,21 +284,21 @@ def main():
         max_iteration
     )
 
-    results.write_to_file(
-        directory,
-        "node_loss",
-        file_name_params,
-        node_loss_results,
-        max_iteration
-    )
+    # results.write_to_file(
+    #     directory,
+    #     "node_loss",
+    #     file_name_params,
+    #     node_loss_results,
+    #     max_iteration
+    # )
 
-    results.write_to_file(
-        directory,
-        "hub_loss",
-        file_name_params,
-        hub_loss_results,
-        max_iteration
-    )
+    # results.write_to_file(
+    #     directory,
+    #     "hub_loss",
+    #     file_name_params,
+    #     hub_loss_results,
+    #     max_iteration
+    # )
 
 
 if __name__ == "__main__":
