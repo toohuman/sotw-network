@@ -25,12 +25,13 @@ trajectory_views = 3
 
 mode = "symmetric" # ["symmetric" | "asymmetric"]
 evidence_only = False
+# demo_mode should be used to visualise performance live during simulation run
 demo_mode = False
 
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
 evidence_rate = 100/100
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
-noise_value = 0.2 # None
+noise_value = 0.2
 
 # Set the initialisation function for agent beliefs - option to add additional
 # initialisation functions later.
@@ -40,7 +41,7 @@ init_beliefs = beliefs.ignorant_belief
 # 1. Remove separate agents(nodes) and edges lists, using only network instead.
 
 def initialisation(
-    num_of_nodes, num_of_hubs, states, agents: [], network, edges: [],
+    num_of_nodes, num_of_hubs, states, agents: [], edges: [], network,
     connectivity, partition: bool, random_instance
 ):
     """
@@ -73,9 +74,8 @@ def initialisation(
         # When there are no hubs, implement random graphs with a connectivity parameter k
         identity = 0
 
-        # Add the "node" agents to the list of agents first.
         agents += [Node(init_beliefs(states)) for x in range(num_of_nodes)]
-        edges += nx.gnp_random_graph(len(agents), connectivity, random_instance).edges
+        edges  += nx.gnp_random_graph(len(agents), connectivity, random_instance).edges
         network.update(edges, agents)
 
     # If the space is to be partitioned, then the agents need to be allocated a region.
@@ -236,8 +236,8 @@ def main():
             arguments.hubs,
             arguments.states,
             agents,
-            network,
             edges,
+            network,
             arguments.connectivity,
             arguments.partition,
             random_instance
@@ -307,6 +307,8 @@ def main():
     if arguments.connectivity is not None:
         file_name_params.append("{}_con".format(arguments.connectivity))
 
+    file_name_params.append("{:.3f}_er".format(evidence_rate))
+
     if noise_value is not None:
         file_name_params.append("{:.3f}_nv".format(noise_value))
     if arguments.partition:
@@ -341,7 +343,7 @@ def main():
 
 if __name__ == "__main__":
 
-    test_set = "standard" # "standard" | "evidence" | "noise" | "both"
+    test_set = "both" # "standard" | "evidence" | "noise" | "both"
 
     if test_set == "standard":
 
