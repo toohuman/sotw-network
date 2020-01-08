@@ -12,7 +12,7 @@ evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
 evidence_strings = ["{:.3f}".format(x) for x in evidence_rates]
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
 connectivity_values = [0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-connectivity_strings = ["{:.1f}".format(x) for x in connectivity_values]
+connectivity_strings = ["{:.2f}".format(x) for x in connectivity_values]
 
 result_directory = "../../results/test_results/sotw-network/"
 
@@ -27,7 +27,14 @@ for a, agents in enumerate(agents_set):
             for e, er in enumerate(reversed(evidence_rates)):
                 for c, con in enumerate(connectivity_values):
 
-                    file_name_parts = ["loss", states, "states", agents, "nodes", "{:.1f}".format(con), "con", "{:.3f}".format(er), "er", "{:.3f}".format(noise), "nv"]
+                    file_name_parts = [
+                        "loss",
+                        states, "states",
+                        agents, "nodes",
+                        "{}".format(con), "con",
+                        "{:.3f}".format(er), "er",
+                        "{:.3f}".format(noise), "nv"
+                    ]
                     file_ext = ".csv"
                     file_name = "_".join(map(lambda x: str(x), file_name_parts)) + file_ext
 
@@ -68,12 +75,12 @@ for a, agents in enumerate(agents_set):
                 vmin=0, vmax=0.5,
                 linewidths=.5,
                 annot=True,
-                annot_kws={"size": 6},
+                annot_kws={"size": 8},
                 fmt=".2f",
                 square=True
             )
             plt.title("Average loss | {} agents, {}x{} states, {} noise".format(agents, states, states, noise))
             ax.set(xlabel='Connectivity', ylabel='Evidence rate')
             # plt.show()
-            plt.savefig("../../results/graphs/sotw-network/hm_loss_{}_agents_{}_states_{}_noise_er_con.pdf".format(agents, states, noise), bbox_inches="tight")
+            plt.savefig("../../results/graphs/sotw-network/hm_loss_{}_agents_{}_states_{:.2f}_noise_er_con.pdf".format(agents, states, noise), bbox_inches="tight")
             plt.clf()
