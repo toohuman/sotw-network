@@ -29,7 +29,7 @@ evidence_only = False
 demo_mode = False
 
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
-evidence_rate = 100/100
+evidence_rate = 10/100
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
 noise_value = 0.2
 
@@ -103,7 +103,7 @@ def main_loop(
         # information from other nodes.
         if isinstance(agent, Node) and random_instance.random() <= evidence_rate:
 
-            # Currently, just testing with random evidence.
+            # Generate a random piece of evidence, selectinf from the set of unknown states.
             evidence = beliefs.random_evidence(
                 agent.belief,
                 agent.region,
@@ -111,7 +111,6 @@ def main_loop(
                 noise_value,
                 random_instance
             )
-
             agent.evidential_updating(operators.combine(agent.belief, evidence))
 
         reached_convergence &= agent.steady_state(steady_state_threshold)
@@ -125,6 +124,7 @@ def main_loop(
 
     # Symmetric
     if mode == "symmetric":
+        
         chosen_nodes = random_instance.choice(edges)
 
         agent1, agent2 = agents[chosen_nodes[0]], agents[chosen_nodes[1]]
@@ -193,6 +193,10 @@ def main():
     global_loss_results = np.array(global_loss_results)
     # node_loss_results = np.copy(global_loss_results)
     # hub_loss_results = np.copy(global_loss_results)
+    steady_state_results = [
+        [ 0.0 for y in range(arguments.nodes) ] for z in range(tests)
+    ]
+    steady_state_results = np.array(steady_state_results)
 
     sotw_view_indices = random_instance.sample(range(tests), trajectory_views)
     global_sotw_view = np.array(
@@ -262,22 +266,26 @@ def main():
             max_iteration = iteration if iteration > max_iteration else max_iteration
             # While not converged, continue to run the main loop.
             if main_loop(agents, edges, arguments.states, true_state, mode, random_instance):
-                for agent in agents:
-                    global_loss_results[iteration][test] += results.loss(agent.belief, true_state)
+                for a, agent in enumerate(agents):
+                    loss = results.loss(agent.belief, true_state)
+                    global_loss_results[iteration][test] += loss
                     # if isinstance(agent, Node):
                     #     node_loss_results[iteration][test] += results.loss(agent.belief, true_state)
                     # elif isinstance(agent, Hub):
                     #     hub_loss_results[iteration][test] += results.loss(agent.belief, true_state)
-
+                    if iteration == iteration_limit:
+                        steady_state_results[test][a] = loss
             # If the simulation has converged, end the test.
             else:
                 # print("Converged: ", iteration)
-                for agent in agents:
-                    global_loss_results[iteration][test] += results.loss(agent.belief, true_state)
+                for a, agent in enumerate(agents):
+                    loss = results.loss(agent.belief, true_state)
+                    global_loss_results[iteration][test] += loss
                     # if isinstance(agent, Node):
                     #     node_loss_results[iteration][test] += results.loss(agent.belief, true_state)
                     # elif isinstance(agent, Hub):
                     #     hub_loss_results[iteration][test] += results.loss(agent.belief, true_state)
+                    steady_state_results[test][a] = loss
 
                 for iter in range(iteration + 1, iteration_limit + 1):
                     global_loss_results[iter][test] = np.copy(global_loss_results[iteration][test])
@@ -320,6 +328,13 @@ def main():
         file_name_params,
         global_loss_results,
         max_iteration
+    )
+    results.write_to_file(
+        directory,
+        "steady_state_loss",
+        file_name_params,
+        steady_state_results,
+        tests
     )
 
     # TODO: Implement hub/node separation results using networkx.
