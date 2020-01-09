@@ -32,6 +32,8 @@ evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
 evidence_rate = 10/100
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
 noise_value = 0.2
+connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
+connectivity_value = None
 
 # Set the initialisation function for agent beliefs - option to add additional
 # initialisation functions later.
@@ -124,8 +126,11 @@ def main_loop(
 
     # Symmetric
     if mode == "symmetric":
-        
-        chosen_nodes = random_instance.choice(edges)
+
+        try:
+            chosen_nodes = random_instance.choice(edges)
+        except IndexError:
+            return True
 
         agent1, agent2 = agents[chosen_nodes[0]], agents[chosen_nodes[1]]
 
@@ -167,6 +172,9 @@ def main():
     parser.add_argument("-r", "--random", action="store_true", help="Random seeding of the RNG.")
     parser.add_argument("-p", "--partition", action="store_true", help="Partition agents into separate regions.")
     arguments = parser.parse_args()
+
+    if connectivity_value is not None:
+        arguments.connectivity = connectivity_value
 
     if arguments.hubs == 0 and arguments.connectivity is None:
         print("Usage error: Connectivity must be specified for node-only graph.")
@@ -311,12 +319,9 @@ def main():
     file_name_params.append("{}_nodes".format(arguments.nodes))
     if arguments.hubs != 0:
         file_name_params.append("{}_hubs".format(arguments.hubs))
-
     if arguments.connectivity is not None:
         file_name_params.append("{}_con".format(arguments.connectivity))
-
     file_name_params.append("{:.3f}_er".format(evidence_rate))
-
     if noise_value is not None:
         file_name_params.append("{:.3f}_nv".format(noise_value))
     if arguments.partition:
@@ -358,7 +363,7 @@ def main():
 
 if __name__ == "__main__":
 
-    test_set = "both" # "standard" | "evidence" | "noise" | "both"
+    test_set = "enc" # "standard" | "evidence" | "noise" | "en" | "enc"
 
     if test_set == "standard":
 
@@ -391,7 +396,7 @@ if __name__ == "__main__":
             noise_value = nv
             main()
 
-    elif test_set == "both":
+    elif test_set == "en":
 
         for er in evidence_rates:
             evidence_rate = er
@@ -399,3 +404,15 @@ if __name__ == "__main__":
             for nv in noise_values:
                 noise_value = nv
                 main()
+
+    elif test_set == "enc":
+
+        for con in connectivity_values:
+            connectivity_value = con
+
+            for er in evidence_rates:
+                evidence_rate = er
+
+                for nv in noise_values:
+                    noise_value = nv
+                    main()
