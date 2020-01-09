@@ -19,7 +19,7 @@ from utilities import beliefs
 from utilities import results
 
 tests = 100
-iteration_limit = 5000
+iteration_limit = 10000
 steady_state_threshold = 100
 trajectory_views = 3
 
@@ -189,9 +189,7 @@ def main():
     directory = "../results/test_results/sotw-network/"
     file_name_params = []
 
-    global evidence_rate
-    global noise_value
-
+    print("Connectivity:", connectivity_value)
     print("Evidence rate:", evidence_rate)
     print("Noise value:", noise_value)
 
@@ -269,7 +267,7 @@ def main():
         # Main loop of the experiments. Starts at 1 because we have recorded the agents'
         # initial state above, at the "0th" index.
         for iteration in range(1, iteration_limit + 1):
-            print("Test #" + str(test) + " - Iteration #" + str(iteration) + "  ", end="\r")
+            print("Test #{} - Iteration #{}    ".format(test, iteration), end="\r")
 
             max_iteration = iteration if iteration > max_iteration else max_iteration
             # While not converged, continue to run the main loop.
