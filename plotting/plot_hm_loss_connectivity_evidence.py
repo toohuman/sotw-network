@@ -11,7 +11,7 @@ states_set = [10]
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
 evidence_strings = ["{:.3f}".format(x) for x in evidence_rates]
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
-connectivity_values = [0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
 connectivity_strings = ["{:.2f}".format(x) for x in connectivity_values]
 
 result_directory = "../../results/test_results/sotw-network/"
@@ -45,7 +45,6 @@ for a, agents in enumerate(agents_set):
                         with open(result_directory + file_name, "r") as file:
                             for line in file:
                                 steady_state_results = line
-                        # print(file_name)
 
                         steady_state_results = [float(x) for x in steady_state_results.strip().split(",")]
 
