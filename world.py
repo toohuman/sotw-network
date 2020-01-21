@@ -105,7 +105,7 @@ def main_loop(
         # information from other nodes.
         if isinstance(agent, Node) and random_instance.random() <= evidence_rate:
 
-            # Generate a random piece of evidence, selectinf from the set of unknown states.
+            # Generate a random piece of evidence, selecting from the set of unknown states.
             evidence = beliefs.random_evidence(
                 agent.belief,
                 agent.region,
