@@ -189,7 +189,7 @@ def main():
     directory = "../results/test_results/sotw-network/"
     file_name_params = []
 
-    print("Connectivity:", connectivity_value)
+    print("Connectivity:", arguments.connectivity)
     print("Evidence rate:", evidence_rate)
     print("Noise value:", noise_value)
 
