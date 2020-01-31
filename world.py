@@ -18,7 +18,7 @@ from utilities import operators
 from utilities import beliefs
 from utilities import results
 
-tests = 100
+tests = 10
 iteration_limit = 10000
 steady_state_threshold = 100
 trajectory_views = 3
@@ -33,7 +33,7 @@ evidence_rate = 10/100
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
 noise_value = 0.2
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
-connectivity_value = None
+connectivity_value = 0.0
 
 # Set the initialisation function for agent beliefs - option to add additional
 # initialisation functions later.
@@ -113,6 +113,7 @@ def main_loop(
                 noise_value,
                 random_instance
             )
+            print(agent.belief, " <==> ", evidence)
             agent.evidential_updating(operators.combine(agent.belief, evidence))
 
         reached_convergence &= agent.steady_state(steady_state_threshold)
@@ -361,7 +362,7 @@ def main():
 
 if __name__ == "__main__":
 
-    test_set = "enc" # "standard" | "evidence" | "noise" | "en" | "enc"
+    test_set = "standard" # "standard" | "evidence" | "noise" | "en" | "enc"
 
     if test_set == "standard":
 
