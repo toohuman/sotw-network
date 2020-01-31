@@ -18,7 +18,6 @@ def random_evidence(belief, region, true_state, noise_value, random_instance):
         unknowns = np.array([[x, y] for x in range(len(belief)) for y in range(len(belief))])
 
     else:
-
         unknowns = np.array([[x, y] for x in range(region[0][0], region[1][0] + 1) for y in range(region[0][1], region[1][1] + 1)])
 
     if len(unknowns) > 0:
