@@ -18,10 +18,9 @@ from utilities import operators
 from utilities import beliefs
 from utilities import results
 
-tests = 10
-iteration_limit = 10000
+tests = 100
+iteration_limit = 10_000
 steady_state_threshold = 100
-trajectory_views = 3
 
 mode = "symmetric" # ["symmetric" | "asymmetric"]
 evidence_only = False
@@ -51,10 +50,10 @@ def initialisation(
     the creation of agents and the initialisation of relevant variables.
     """
 
+    identity = 0
     # If there should be a separation of hubs from nodes, then use the standard implementation
     # until an alternative networkx implementation has been written.
     if num_of_hubs > 0:
-        identity = 0
 
         # Add the "node" agents to the list of agents first.
         agents += [Node(init_beliefs(states)) for x in range(num_of_nodes * num_of_hubs)]
@@ -74,7 +73,6 @@ def initialisation(
         # network = nx.complete_graph(agents)
     else:
         # When there are no hubs, implement random graphs with a connectivity parameter k
-        identity = 0
 
         agents += [Node(init_beliefs(states)) for x in range(num_of_nodes)]
         edges  += nx.gnp_random_graph(len(agents), connectivity, random_instance).edges
@@ -114,7 +112,6 @@ def main_loop(
                 noise_value,
                 random_instance
             )
-            print(agent.belief, " <==> ", evidence)
             agent.evidential_updating(operators.combine(agent.belief, evidence))
 
         reached_convergence &= agent.steady_state(steady_state_threshold)
@@ -206,36 +203,13 @@ def main():
     ]
     steady_state_results = np.array(steady_state_results)
 
-    sotw_view_indices = random_instance.sample(range(tests), trajectory_views)
-    global_sotw_view = np.array(
-        [
-            [
-                [
-                    [
-                        float() for _ in range(
-                            arguments.hubs +
-                            (arguments.nodes * arguments.hubs)
-                        )
-                    ] for _ in range(arguments.states)
-                ] for _ in range(arguments.states)
-            ] for _ in range(trajectory_views)
-        ]
-    )
-
     # Repeat the initialisation and loop for the number of simulation runs required
-    sotw_index = -1
     max_iteration = 0
     for test in range(tests):
 
         # True state of the world
-        true_state = np.array(
-            [
-                [random_instance.choice([-1,1]) for x in range(arguments.states)]
-                for y in range(arguments.states)
-            ]
-        )
+        true_state = np.array([random_instance.choice([-1,1]) for x in range(arguments.states)])
 
-        grid = [[[] for i in range(arguments.states)] for j in range(arguments.states)]
         agents = list()
         edges = list()
         network = nx.Graph()
@@ -262,9 +236,6 @@ def main():
             #     node_loss_results[0][test] += results.loss(agent.belief, true_state)
             # elif isinstance(agent, Hub):
             #     hub_loss_results[0][test] += results.loss(agent.belief, true_state)
-
-        if test in sotw_view_indices:
-            sotw_index = sotw_view_indices.index(test)
 
         # Main loop of the experiments. Starts at 1 because we have recorded the agents'
         # initial state above, at the "0th" index.
@@ -363,7 +334,7 @@ def main():
 
 if __name__ == "__main__":
 
-    test_set = "standard" # "standard" | "evidence" | "noise" | "en" | "enc"
+    test_set = "enc" # "standard" | "evidence" | "noise" | "en" | "enc"
 
     if test_set == "standard":
 
