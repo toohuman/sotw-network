@@ -7,7 +7,7 @@ import seaborn as sns; sns.set()
 PERC_LOWER = 10
 PERC_UPPER = 90
 
-states_set = [10]
+states_set = [100]
 agents_set = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
 evidence_strings = ["{:.3f}".format(x) for x in evidence_rates]
@@ -67,7 +67,7 @@ for s, states in enumerate(states_set):
             plt.xlabel("Agents")
             plt.ylabel("Average Loss")
             plt.ylim(-0.01, 0.55)
-            plt.title("Average loss | {} states, {} er, {} noise".format(states * states, er, noise))
+            plt.title("Average loss | {} states, {} er, {} noise".format(states, er, noise))
             # plt.legend()
             # plt.show()
             plt.savefig("../../results/graphs/sotw-network/loss_{}_states_{:.2f}_er_{:.2f}_noise.pdf".format(states, er, noise, con))

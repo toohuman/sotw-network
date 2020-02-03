@@ -7,7 +7,7 @@ PERC_LOWER = 10
 PERC_UPPER = 90
 
 agents_set = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
-states_set = [10]
+states_set = [100]
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
 evidence_strings = ["{:.3f}".format(x) for x in evidence_rates]
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
@@ -79,7 +79,7 @@ for a, agents in enumerate(agents_set):
                 fmt=".2f",
                 square=True
             )
-            plt.title("Average loss | {} agents, {} states, {} noise".format(agents, states * states, noise))
+            plt.title("Average loss | {} agents, {} states, {} noise".format(agents, states, noise))
             ax.set(xlabel='Connectivity', ylabel='Evidence rate')
             # plt.show()
             plt.savefig("../../results/graphs/sotw-network/hm_loss_{}_agents_{}_states_{:.2f}_noise_er_con.pdf".format(agents, states, noise), bbox_inches="tight")
