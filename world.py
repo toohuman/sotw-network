@@ -43,7 +43,7 @@ init_beliefs = beliefs.ignorant_belief
 
 def initialisation(
     num_of_nodes, num_of_hubs, states, agents: [], edges: [], network,
-    connectivity, partition: bool, random_instance
+    connectivity, random_instance
 ):
     """
     This initialisation function runs before any other part of the code. Starting with
@@ -77,11 +77,6 @@ def initialisation(
         agents += [Node(init_beliefs(states)) for x in range(num_of_nodes)]
         edges  += nx.gnp_random_graph(len(agents), connectivity, random_instance).edges
         network.update(edges, agents)
-
-    # If the space is to be partitioned, then the agents need to be allocated a region.
-    if partition:
-        # TODO: Implement ...
-        sys.exit(0)
 
     return
 
@@ -169,7 +164,6 @@ def main():
     parser.add_argument("-c", "--connectivity", type=float, help="Connectivity of the random graph in [0,1],\
         e.g., probability of an edge between any two nodes.")
     parser.add_argument("-r", "--random", action="store_true", help="Random seeding of the RNG.")
-    parser.add_argument("-p", "--partition", action="store_true", help="Partition agents into separate regions.")
     arguments = parser.parse_args()
 
     if connectivity_value is not None:
@@ -192,8 +186,9 @@ def main():
     print("Evidence rate:", evidence_rate)
     print("Noise value:", noise_value)
 
+    # Structure should be [mean, std_dev, min, max]
     global_loss_results = [
-        [ 0.0 for y in range(tests) ] for z in range(iteration_limit + 1)
+        [ [0.0 for x in range(4)] for y in range(tests) ] for z in range(iteration_limit + 1)
     ]
     global_loss_results = np.array(global_loss_results)
     # node_loss_results = np.copy(global_loss_results)
@@ -225,17 +220,22 @@ def main():
             edges,
             network,
             arguments.connectivity,
-            arguments.partition,
             random_instance
         )
 
+        # Reusable vector for loss values of population
+        loss_values = np.array([0.0 for x in range(arguments.nodes)])
+
         # Pre-loop results based on agent initialisation.
-        for agent in agents:
-            global_loss_results[0][test] += results.loss(agent.belief, true_state)
-            # if isinstance(agent, Node):
-            #     node_loss_results[0][test] += results.loss(agent.belief, true_state)
-            # elif isinstance(agent, Hub):
-            #     hub_loss_results[0][test] += results.loss(agent.belief, true_state)
+        for a, agent in enumerate(agents):
+            loss_values[a] = results.loss(agent.belief, true_state)
+
+        global_loss_results[0][test] = [
+            np.average(loss_values),
+            np.std(loss_values),
+            np.min(loss_values),
+            np.max(loss_values)
+        ]
 
         # Main loop of the experiments. Starts at 1 because we have recorded the agents'
         # initial state above, at the "0th" index.
@@ -247,24 +247,40 @@ def main():
             if main_loop(agents, edges, arguments.states, true_state, mode, random_instance):
                 for a, agent in enumerate(agents):
                     loss = results.loss(agent.belief, true_state)
-                    global_loss_results[iteration][test] += loss
+                    loss_values[a] = loss
                     # if isinstance(agent, Node):
                     #     node_loss_results[iteration][test] += results.loss(agent.belief, true_state)
                     # elif isinstance(agent, Hub):
                     #     hub_loss_results[iteration][test] += results.loss(agent.belief, true_state)
                     if iteration == iteration_limit:
                         steady_state_results[test][a] = loss
+
+                global_loss_results[0][test] = [
+                    np.average(loss_values),
+                    np.std(loss_values),
+                    np.min(loss_values),
+                    np.max(loss_values)
+                ]
+
             # If the simulation has converged, end the test.
             else:
                 # print("Converged: ", iteration)
                 for a, agent in enumerate(agents):
                     loss = results.loss(agent.belief, true_state)
-                    global_loss_results[iteration][test] += loss
+                    loss_values[a] = loss
+                    # global_loss_results[iteration][test] += loss
                     # if isinstance(agent, Node):
                     #     node_loss_results[iteration][test] += results.loss(agent.belief, true_state)
                     # elif isinstance(agent, Hub):
                     #     hub_loss_results[iteration][test] += results.loss(agent.belief, true_state)
                     steady_state_results[test][a] = loss
+
+                global_loss_results[0][test] = [
+                    np.average(loss_values),
+                    np.std(loss_values),
+                    np.min(loss_values),
+                    np.max(loss_values)
+                ]
 
                 for iter in range(iteration + 1, iteration_limit + 1):
                     global_loss_results[iter][test] = np.copy(global_loss_results[iteration][test])
@@ -274,17 +290,8 @@ def main():
                 break
     print()
 
-    # Post-loop results processing (normalisation).
-    global_loss_results /= len(agents)
-    # node_loss_results /= arguments.nodes * arguments.hubs
-    # hub_loss_results /= arguments.hubs
-
     # Recording of results. First, add parameters in sequence.
-    # Old params
-    # file_name_params.append("{}_nodes".format(arguments.nodes * arguments.hubs))
-    # file_name_params.append("{}_hubs".format(arguments.hubs))
-    # file_name_params.append("{}_states".format(arguments.states))
-    # file_name_params.append("{:.3f}_er".format(evidence_rate))
+    
     # Networkx params
     file_name_params.append("{}_states".format(arguments.states))
     file_name_params.append("{}_nodes".format(arguments.nodes))
@@ -295,8 +302,6 @@ def main():
     file_name_params.append("{:.3f}_er".format(evidence_rate))
     if noise_value is not None:
         file_name_params.append("{:.3f}_nv".format(noise_value))
-    if arguments.partition:
-        file_name_params.append("part")
 
     results.write_to_file(
         directory,
