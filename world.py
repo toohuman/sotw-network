@@ -2,6 +2,7 @@ import argparse
 import copy
 import importlib
 import networkx as nx
+import pickle
 import random
 import sys
 
@@ -303,13 +304,14 @@ def main():
     if noise_value is not None:
         file_name_params.append("{:.3f}_nv".format(noise_value))
 
-    results.write_to_file(
-        directory,
-        "loss",
-        file_name_params,
-        global_loss_results,
-        max_iteration
-    )
+    # results.write_to_file(
+    #     directory,
+    #     "loss",
+    #     file_name_params,
+    #     global_loss_results,
+    #     max_iteration
+    # )
+
     results.write_to_file(
         directory,
         "steady_state_loss",
