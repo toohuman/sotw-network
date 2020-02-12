@@ -183,9 +183,13 @@ def main():
     directory = "../results/test_results/sotw-network/"
     file_name_params = []
 
-    print("Connectivity:", arguments.connectivity)
-    print("Evidence rate:", evidence_rate)
-    print("Noise value:", noise_value)
+    print(
+        "States:", arguments.states,
+        "\t Agents:", arguments.nodes,
+        "\t Connectivity:", arguments.connectivity,
+        "\t Evidence rate:", evidence_rate,
+        "\t Noise value:", noise_value
+    )
 
     # Structure should be [mean, std_dev, min, max]
     global_loss_results = [
@@ -256,7 +260,7 @@ def main():
                     if iteration == iteration_limit:
                         steady_state_results[test][a] = loss
 
-                global_loss_results[0][test] = [
+                global_loss_results[iteration][test] = [
                     np.average(loss_values),
                     np.std(loss_values),
                     np.min(loss_values),
@@ -276,7 +280,7 @@ def main():
                     #     hub_loss_results[iteration][test] += results.loss(agent.belief, true_state)
                     steady_state_results[test][a] = loss
 
-                global_loss_results[0][test] = [
+                global_loss_results[iteration][test] = [
                     np.average(loss_values),
                     np.std(loss_values),
                     np.min(loss_values),
@@ -294,50 +298,39 @@ def main():
     # Recording of results. First, add parameters in sequence.
     
     # Networkx params
-    file_name_params.append("{}_states".format(arguments.states))
-    file_name_params.append("{}_nodes".format(arguments.nodes))
+    file_name_params.append("{}s".format(arguments.states))
+    file_name_params.append("{}a".format(arguments.nodes))
     if arguments.hubs != 0:
-        file_name_params.append("{}_hubs".format(arguments.hubs))
+        file_name_params.append("{}h".format(arguments.hubs))
     if arguments.connectivity is not None:
-        file_name_params.append("{}_con".format(arguments.connectivity))
-    file_name_params.append("{:.3f}_er".format(evidence_rate))
+        file_name_params.append("{:.2f}con".format(arguments.connectivity))
+    file_name_params.append("{:.2f}er".format(evidence_rate))
     if noise_value is not None:
-        file_name_params.append("{:.3f}_nv".format(noise_value))
+        file_name_params.append("{:.2f}nv".format(noise_value))
+
+    # Write loss results to pickle file
+    # import bz2
+    import lzma
+
+    with open(directory + "loss" + '_' + '_'.join(file_name_params) + '.pkl', 'wb') as file:
+        pickle.dump(global_loss_results, file)
+    # with bz2.BZ2File(directory + "loss" + '_' + '_'.join(file_name_params) + '.pbz2', 'wb') as file:
+    #     pickle.dump(global_loss_results, file)
+    with lzma.open(directory + "loss" + '_' + '_'.join(file_name_params) + '.xz', 'wb') as file:
+        pickle.dump(global_loss_results, file)
 
     # results.write_to_file(
     #     directory,
-    #     "loss",
+    #     "steady_state_loss",
     #     file_name_params,
-    #     global_loss_results,
-    #     max_iteration
+    #     steady_state_results,
+    #     tests
     # )
 
-    results.write_to_file(
-        directory,
-        "steady_state_loss",
-        file_name_params,
-        steady_state_results,
-        tests
-    )
+    with lzma.open(directory + "loss" + '_' + '_'.join(file_name_params) + '.xz', 'wb') as file:
+        pickle.dump(steady_state_results, file)
 
     # TODO: Implement hub/node separation results using networkx.
-
-    # results.write_to_file(
-    #     directory,
-    #     "node_loss",
-    #     file_name_params,
-    #     node_loss_results,
-    #     max_iteration
-    # )
-
-    # results.write_to_file(
-    #     directory,
-    #     "hub_loss",
-    #     file_name_params,
-    #     hub_loss_results,
-    #     max_iteration
-    # )
-
 
 if __name__ == "__main__":
 
