@@ -111,5 +111,9 @@ for noise in noise_values:
                 plt.title("{} hub(s), {} nodes, {} states".format(hubs, hubs * nodes, states**2))
                 plt.legend()
                 # plt.show()
-                plt.savefig("../../results/graphs/sotw-network/{}_hubs_{}_nodes_{}_states_{}_er_{}_noise.pdf".format(hubs, hubs * nodes, states, er, noise))
+                plt.savefig(
+                    "../../results/graphs/sotw-network/{}_hubs_{}_nodes_{}_states_{}_er_{}_noise.pdf".format(
+                        hubs, hubs * nodes, states, er, noise
+                    )
+                )
                 plt.clf()

@@ -63,14 +63,14 @@ for s, states in enumerate(states_set):
             cmap = sns.cm.rocket
             for c, con in enumerate(connectivity_values):
                 ax = sns.lineplot(agents_set, loss_results[c], linewidth = 2, label=connectivity_strings[c])
-            plt.axhline(noise, color="red", linestyle="dotted")
+            plt.axhline(noise, color="red", linestyle="dotted", linewidth = 2)
             plt.xlabel("Agents")
             plt.ylabel("Average Error")
             if noise == 0:
                 plt.ylim(-0.01, 0.01)
             else:
                 plt.ylim(-0.01, noise + (noise * 0.1))
-            plt.title("Average loss | {} states, {} er, {} noise".format(states, er, noise))
+            # plt.title("Average loss | {} states, {} er, {} noise".format(states, er, noise))
             # plt.legend()
             # plt.show()
             plt.savefig("../../results/graphs/sotw-network/loss_{}_states_{:.2f}_er_{:.2f}_noise.pdf".format(states, er, noise, con))
