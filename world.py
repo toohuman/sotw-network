@@ -1,6 +1,7 @@
 import argparse
 import copy
 import importlib
+import lzma
 import networkx as nx
 import pickle
 import random
@@ -296,7 +297,7 @@ def main():
     print()
 
     # Recording of results. First, add parameters in sequence.
-    
+
     # Networkx params
     file_name_params.append("{}s".format(arguments.states))
     file_name_params.append("{}a".format(arguments.nodes))
@@ -310,13 +311,12 @@ def main():
 
     # Write loss results to pickle file
     # import bz2
-    import lzma
 
-    with open(directory + "loss" + '_' + '_'.join(file_name_params) + '.pkl', 'wb') as file:
-        pickle.dump(global_loss_results, file)
-    # with bz2.BZ2File(directory + "loss" + '_' + '_'.join(file_name_params) + '.pbz2', 'wb') as file:
+    # with open(directory + "loss" + '_' + '_'.join(file_name_params) + '.pkl', 'wb') as file:
     #     pickle.dump(global_loss_results, file)
-    with lzma.open(directory + "loss" + '_' + '_'.join(file_name_params) + '.xz', 'wb') as file:
+    # with bz2.BZ2File(directory + "loss" + '_' + '_'.join(file_name_params) + '.pkl.pbz2', 'wb') as file:
+    #     pickle.dump(global_loss_results, file)
+    with lzma.open(directory + "loss" + '_' + '_'.join(file_name_params) + '.pkl.xz', 'wb') as file:
         pickle.dump(global_loss_results, file)
 
     # results.write_to_file(
@@ -327,7 +327,7 @@ def main():
     #     tests
     # )
 
-    with lzma.open(directory + "loss" + '_' + '_'.join(file_name_params) + '.xz', 'wb') as file:
+    with lzma.open(directory + "steady_state_loss" + '_' + '_'.join(file_name_params) + '.pkl.xz', 'wb') as file:
         pickle.dump(steady_state_results, file)
 
     # TODO: Implement hub/node separation results using networkx.
