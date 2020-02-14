@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import pandas as pd
 import pickle
-import seaborn as sns; sns.set(font_scale=1)
+import seaborn as sns; sns.set()
 
 PERC_LOWER = 10
 PERC_UPPER = 90
@@ -51,7 +51,7 @@ for a, agents in enumerate(agents_set):
                             data = pickle.load(file)
 
                         # data_frame[n][e][c] = pd.DataFrame(data)
-                        heatmap_results[n][e][c] = np.average(data)
+                        heatmap_results[n][e][c] = np.average([np.average(x) for x in data])
 
                         skip = False
 
@@ -81,5 +81,5 @@ for a, agents in enumerate(agents_set):
         )
         # plt.title("Average loss | {} agents, {} states, {} noise".format(agents, states, noise))
         # plt.show()
-        plt.savefig("../../results/graphs/sotw-network/hm_loss_{}_agents_{}_states_noise_paper.pdf".format(agents, states, noise), bbox_inches="tight")
+        plt.savefig("../../results/graphs/sotw-network/hm_loss_{}_states_{}_agents_noise_paper.pdf".format(states, agents, noise), bbox_inches="tight")
         plt.clf()

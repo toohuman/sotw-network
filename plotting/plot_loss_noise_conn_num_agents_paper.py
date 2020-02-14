@@ -1,7 +1,8 @@
-import itertools
+import lzma
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+import pickle
 import seaborn as sns; sns.set(font_scale=1)
 
 PERC_LOWER = 10
@@ -22,7 +23,7 @@ for s, states in enumerate(states_set):
     for e, er in enumerate(reversed(evidence_rates)):
         for n, noise in enumerate(noise_values):
 
-            loss_results = np.array([[0.0 for x in agents_set] for y in connectivity_values])
+            results = np.array([[0.0 for x in agents_set] for y in connectivity_values])
 
             skip = True
 
@@ -31,38 +32,35 @@ for s, states in enumerate(states_set):
                 for a, agents in enumerate(agents_set):
                     file_name_parts = [
                         "steady_state_loss",
-                        states, "states",
-                        agents, "nodes",
-                        "{}".format(con), "con",
-                        "{:.3f}".format(er), "er",
-                        "{:.3f}".format(noise), "nv"
+                        "{}s".format(states),
+                        "{}a".format(agents),
+                        "{:.2f}con".format(con),
+                        "{:.2f}er".format(er),
+                        "{:.2f}nv".format(noise)
                     ]
-                    file_ext = ".csv"
+                    file_ext = ".pkl.xz"
                     file_name = "_".join(map(lambda x: str(x), file_name_parts)) + file_ext
-                    # steady_state_loss_10_states_100_nodes_0.1_con_1.000_er_0.500_nv
 
                     file_contents = list()
 
                     try:
-                        with open(result_directory + file_name, "r") as file:
-                            for line in file:
-                                file_contents.append([float(x) for x in line.strip().split(",")])
+                        with lzma.open(result_directory + file_name, "rb") as file:
+                            data = pickle.load(file)
 
                     except FileNotFoundError:
                         print("MISSING: " + file_name)
 
-
-                    loss_results[c][a] = np.average( [np.average(file_contents[x]) for x in range(len(file_contents))])
+                    results[c][a] = np.average([np.average(x) for x in data])
 
                     skip = False
 
                 if skip:
                     continue
 
-            print(loss_results)
+            print(results)
             cmap = sns.cm.rocket
             for c, con in enumerate(connectivity_values):
-                ax = sns.lineplot(agents_set, loss_results[c], linewidth = 2, label=connectivity_strings[c])
+                ax = sns.lineplot(agents_set, results[c], linewidth = 2, label=connectivity_strings[c])
             plt.axhline(noise, color="red", linestyle="dotted", linewidth = 2)
             plt.xlabel("Agents")
             plt.ylabel("Average Error")

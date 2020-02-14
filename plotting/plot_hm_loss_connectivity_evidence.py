@@ -1,7 +1,9 @@
+import lzma
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-import seaborn as sns; sns.set(font_scale=1)
+import pickle
+import seaborn as sns; sns.set()
 
 PERC_LOWER = 10
 PERC_UPPER = 90
@@ -28,29 +30,24 @@ for a, agents in enumerate(agents_set):
                 for c, con in enumerate(connectivity_values):
 
                     file_name_parts = [
-                        "loss",
-                        states, "states",
-                        agents, "nodes",
-                        "{}".format(con), "con",
-                        "{:.3f}".format(er), "er",
-                        "{:.3f}".format(noise), "nv"
+                        "steady_state_loss",
+                        "{}s".format(states),
+                        "{}a".format(agents),
+                        "{:.2f}con".format(con),
+                        "{:.2f}er".format(er),
+                        "{:.2f}nv".format(noise)
                     ]
-                    file_ext = ".csv"
+                    file_ext = ".pkl.xz"
                     file_name = "_".join(map(lambda x: str(x), file_name_parts)) + file_ext
 
                     steady_state_results = []
                     average_loss = 0.0
 
                     try:
-                        with open(result_directory + file_name, "r") as file:
-                            for line in file:
-                                steady_state_results = line
+                        with lzma.open(result_directory + file_name, "rb") as file:
+                            data = pickle.load(file)
 
-                        steady_state_results = [float(x) for x in steady_state_results.strip().split(",")]
-
-                        average_loss = np.average(steady_state_results)
-
-                        heatmap_results[e][c] = average_loss
+                        heatmap_results[e][c] = np.average([np.average(x) for x in data])
 
                         skip = False
 
@@ -79,8 +76,8 @@ for a, agents in enumerate(agents_set):
                 fmt=".2f",
                 square=True
             )
-            plt.title("Average loss | {} agents, {} states, {} noise".format(agents, states, noise))
+            plt.title("Average loss | {} states, {} agents, {} noise".format(agents, states, noise))
             ax.set(xlabel='Connectivity', ylabel='Evidence rate')
             # plt.show()
-            plt.savefig("../../results/graphs/sotw-network/hm_loss_{}_agents_{}_states_{:.2f}_noise_er_con.pdf".format(agents, states, noise), bbox_inches="tight")
+            plt.savefig("../../results/graphs/sotw-network/hm_loss_{}_states_{}_agents_{:.2f}_noise_er_con.pdf".format(states, agents, noise), bbox_inches="tight")
             plt.clf()
