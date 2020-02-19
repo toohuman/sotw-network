@@ -9,11 +9,11 @@ import numpy as np
 
 # Add the directory paths so that the submodules can also find the relative modules.
 sys.path.append("sotw")
-sys.path.append("CascadingFailure")
 
 # from agents.agent import Agent
 from graph.node import Node
 from graph.hub import Hub
+from sotw.agents.agent import Agent
 from utilities import operators
 from utilities import beliefs
 from utilities import results
@@ -22,17 +22,22 @@ tests = 100
 iteration_limit = 10_000
 steady_state_threshold = 100
 
+# Set the graph type
+# graph_type = "ER"     # Erdos-Reyni: random
+graph_type = "ER"       # Watts-Strogatz: small-world
+# graph_type = "PATH:0" # Manually construct pathological cases, e.g., star, ring.
+
 mode = "symmetric" # ["symmetric" | "asymmetric"]
 evidence_only = False
 # demo_mode should be used to visualise performance live during simulation run
 demo_mode = False
 
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
-evidence_rate = 10/100
+evidence_rate = 100/100
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
 noise_value = 0.2
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
-connectivity_value = 0.0
+connectivity_value = 0.5
 
 # Set the initialisation function for agent beliefs - option to add additional
 # initialisation functions later.
@@ -42,8 +47,7 @@ init_beliefs = beliefs.ignorant_belief
 # 1. Remove separate agents(nodes) and edges lists, using only network instead.
 
 def initialisation(
-    num_of_nodes, num_of_hubs, states, agents: [], edges: [], network,
-    connectivity, random_instance
+    num_of_nodes, num_of_hubs, states, network, connectivity, random_instance
 ):
     """
     This initialisation function runs before any other part of the code. Starting with
@@ -51,6 +55,9 @@ def initialisation(
     """
 
     identity = 0
+    agents = list()
+    edges = list()
+
     # If there should be a separation of hubs from nodes, then use the standard implementation
     # until an alternative networkx implementation has been written.
     if num_of_hubs > 0:
@@ -72,16 +79,19 @@ def initialisation(
         # A complete graph using networkx:
         # network = nx.complete_graph(agents)
     else:
-        # When there are no hubs, implement random graphs with a connectivity parameter k
+        # Produce a random graph (Erdos-Renyi) with a connectivity parameter k
 
-        agents += [Node(init_beliefs(states)) for x in range(num_of_nodes)]
+        agents += [Agent(init_beliefs(states)) for x in range(num_of_nodes)]
         edges  += nx.gnp_random_graph(len(agents), connectivity, random_instance).edges
-        network.update(edges, agents)
+        for e, edge in enumerate(edges):
+            edges[e] = (agents[edge[0]], agents[edge[1]])
+
+    network.update(edges, agents)
 
     return
 
 def main_loop(
-    agents: [], edges: [], states: int, true_state: [], mode: str, random_instance
+    states: int, network, true_state: [], mode: str, random_instance
 ):
     """
     The main loop performs various actions in sequence until certain conditions are
@@ -92,7 +102,7 @@ def main_loop(
     # according to the current evidence rate, have the agent perform evidential
     # updating.
     reached_convergence = True
-    for agent in agents:
+    for agent in network.nodes:
 
         # Hubs do not receive direct evidence, only updating their beliefs based on
         # information from other nodes.
@@ -122,11 +132,11 @@ def main_loop(
     if mode == "symmetric":
 
         try:
-            chosen_nodes = random_instance.choice(edges)
+            chosen_nodes = random_instance.choice(list(network.edges()))
         except IndexError:
             return True
 
-        agent1, agent2 = agents[chosen_nodes[0]], agents[chosen_nodes[1]]
+        agent1, agent2 = chosen_nodes[0], chosen_nodes[1]
 
         new_belief = operators.combine(agent1.belief, agent2.belief)
 
@@ -156,7 +166,7 @@ def main():
             about the true state of the world.")
     parser.add_argument("states", type=int)
     # Nodes: Number of standard nodes (e.g., submarines).
-    parser.add_argument("nodes", type=int)
+    parser.add_argument("agents", type=int)
     # Hubs: Number of hub nodes (e.g., ships) to allocate - the k in k-means partitioning.
     parser.add_argument("--hubs", type=int, default=0,
         help="Hubs are the pass-through nodes for other nodes.\
@@ -184,8 +194,8 @@ def main():
 
     print(
         "States:", arguments.states,
-        "\t Agents:", arguments.nodes,
-        "\t Connectivity:", arguments.connectivity,
+        "\t Agents:", arguments.agents,
+        "\t Connectivity:", arguments.connectivity, " - ", graph_type,
         "\t Evidence rate:", evidence_rate,
         "\t Noise value:", noise_value
     )
@@ -198,7 +208,7 @@ def main():
     # node_loss_results = np.copy(global_loss_results)
     # hub_loss_results = np.copy(global_loss_results)
     steady_state_results = [
-        [ 0.0 for y in range(arguments.nodes) ] for z in range(tests)
+        [ 0.0 for y in range(arguments.agents) ] for z in range(tests)
     ]
     steady_state_results = np.array(steady_state_results)
 
@@ -209,29 +219,25 @@ def main():
         # True state of the world
         true_state = np.array([random_instance.choice([-1,1]) for x in range(arguments.states)])
 
-        agents = list()
-        edges = list()
         network = nx.Graph()
 
         # Initialise the agents and the environment.
         # If we are to partition the space, we need to assign agents regions of the
         # total grid space.
         initialisation(
-            arguments.nodes,
+            arguments.agents,
             arguments.hubs,
             arguments.states,
-            agents,
-            edges,
             network,
             arguments.connectivity,
             random_instance
         )
 
         # Reusable vector for loss values of population
-        loss_values = np.array([0.0 for x in range(arguments.nodes)])
+        loss_values = np.array([0.0 for x in range(arguments.agents)])
 
         # Pre-loop results based on agent initialisation.
-        for a, agent in enumerate(agents):
+        for a, agent in enumerate(network.nodes):
             loss_values[a] = results.loss(agent.belief, true_state)
 
         global_loss_results[0][test] = [
@@ -248,8 +254,8 @@ def main():
 
             max_iteration = iteration if iteration > max_iteration else max_iteration
             # While not converged, continue to run the main loop.
-            if main_loop(agents, edges, arguments.states, true_state, mode, random_instance):
-                for a, agent in enumerate(agents):
+            if main_loop(arguments.states, network, true_state, mode, random_instance):
+                for a, agent in enumerate(network.nodes):
                     loss = results.loss(agent.belief, true_state)
                     loss_values[a] = loss
                     # if isinstance(agent, Node):
@@ -269,7 +275,7 @@ def main():
             # If the simulation has converged, end the test.
             else:
                 # print("Converged: ", iteration)
-                for a, agent in enumerate(agents):
+                for a, agent in enumerate(network.nodes):
                     loss = results.loss(agent.belief, true_state)
                     loss_values[a] = loss
                     # global_loss_results[iteration][test] += loss
@@ -298,7 +304,7 @@ def main():
 
     # Networkx params
     file_name_params.append("{}s".format(arguments.states))
-    file_name_params.append("{}a".format(arguments.nodes))
+    file_name_params.append("{}a".format(arguments.agents))
     if arguments.hubs != 0:
         file_name_params.append("{}h".format(arguments.hubs))
     if arguments.connectivity is not None:
@@ -308,12 +314,7 @@ def main():
         file_name_params.append("{:.2f}nv".format(noise_value))
 
     # Write loss results to pickle file
-    # import bz2
 
-    # with open(directory + "loss" + '_' + '_'.join(file_name_params) + '.pkl', 'wb') as file:
-    #     pickle.dump(global_loss_results, file)
-    # with bz2.BZ2File(directory + "loss" + '_' + '_'.join(file_name_params) + '.pkl.pbz2', 'wb') as file:
-    #     pickle.dump(global_loss_results, file)
     with lzma.open(directory + "loss" + '_' + '_'.join(file_name_params) + '.pkl.xz', 'wb') as file:
         pickle.dump(global_loss_results, file)
 
@@ -332,7 +333,7 @@ def main():
 
 if __name__ == "__main__":
 
-    test_set = "enc" # "standard" | "evidence" | "noise" | "en" | "enc"
+    test_set = "standard" # "standard" | "evidence" | "noise" | "en" | "enc"
 
     if test_set == "standard":
 
