@@ -24,7 +24,7 @@ steady_state_threshold = 100
 
 # Set the graph type
 # graph_type = "ER"     # Erdos-Reyni: random
-graph_type = "ER"       # Watts-Strogatz: small-world
+graph_type = "WS"       # Watts-Strogatz: small-world
 # graph_type = "PATH:0" # Manually construct pathological cases, e.g., star, ring.
 
 mode = "symmetric" # ["symmetric" | "asymmetric"]
@@ -37,7 +37,9 @@ evidence_rate = 100/100
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
 noise_value = 0.2
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
-connectivity_value = 0.5
+connectivity_value = 0.0
+knn_values = [2,4,6]
+k_nearest_neighbours = 4
 
 # Set the initialisation function for agent beliefs - option to add additional
 # initialisation functions later.
@@ -47,10 +49,11 @@ init_beliefs = beliefs.ignorant_belief
 # 1. Remove separate agents(nodes) and edges lists, using only network instead.
 
 def initialisation(
-    num_of_nodes, num_of_hubs, states, network, connectivity, random_instance
+    num_of_agents, num_of_hubs, states, network, connectivity, knn, random_instance
 ):
     """
-    This initialisation function runs before any other part of the code. Starting with
+    This initialisation function
+    print(steady_state_results)runs before any other part of the code. Starting with
     the creation of agents and the initialisation of relevant variables.
     """
 
@@ -63,7 +66,7 @@ def initialisation(
     if num_of_hubs > 0:
 
         # Add the "node" agents to the list of agents first.
-        agents += [Node(init_beliefs(states)) for x in range(num_of_nodes * num_of_hubs)]
+        agents += [Node(init_beliefs(states)) for x in range(num_of_agents * num_of_hubs)]
         # Then add the "hub" agents.
         agents += [Hub(init_beliefs(states)) for x in range(num_of_hubs)]
         # Set agent's identity.
@@ -73,19 +76,25 @@ def initialisation(
 
         # Finally, generate a list of edges in which each hub is connected to all of its
         # respective nodes and each hub is also connected to every other hub.
-        edges += [((num_of_hubs * num_of_nodes) + i, (i * num_of_nodes) + j) for i in range(num_of_hubs) for j in range(num_of_nodes)]
-        edges += [((num_of_hubs * num_of_nodes) + i, (num_of_hubs * num_of_nodes) + j) for i in range(num_of_hubs) for j in range(i + 1, num_of_hubs)]
+        edges += [((num_of_hubs * num_of_agents) + i, (i * num_of_agents) + j) for i in range(num_of_hubs) for j in range(num_of_agents)]
+        edges += [((num_of_hubs * num_of_agents) + i, (num_of_hubs * num_of_agents) + j) for i in range(num_of_hubs) for j in range(i + 1, num_of_hubs)]
 
         # A complete graph using networkx:
         # network = nx.complete_graph(agents)
     else:
-        # Produce a random graph (Erdos-Renyi) with a connectivity parameter k
+        agents += [Agent(init_beliefs(states)) for x in range(num_of_agents)]
 
-        agents += [Agent(init_beliefs(states)) for x in range(num_of_nodes)]
-        edges  += nx.gnp_random_graph(len(agents), connectivity, random_instance).edges
-        for e, edge in enumerate(edges):
-            edges[e] = (agents[edge[0]], agents[edge[1]])
+        # Produce a random graph (Erdos-Renyi) with a connectivity parameter p
+        if graph_type == "ER":
+            edges  += nx.gnp_random_graph(len(agents), connectivity, random_instance).edges
+        # Produce a random small-world graph (Watts-Strogatz) with k nearest neighbours
+        # and a connectivity parameter p
+        elif graph_type == "WS":
+            edges  += nx.watts_strogatz_graph(len(agents), knn, connectivity, random_instance).edges
+        # For Python 3.6+, dictionaries maintain a consistent order, so node/agent order
+        # should be maintained.
 
+    edges = map(lambda x: (agents[x[0]], agents[x[1]]), edges)
     network.update(edges, agents)
 
     return
@@ -173,11 +182,14 @@ def main():
         They do not receive direct evidence.")
     parser.add_argument("-c", "--connectivity", type=float, help="Connectivity of the random graph in [0,1],\
         e.g., probability of an edge between any two nodes.")
+    parser.add_argument("-k", "--k-nearest-neighbours", type=float, help="k nearest neighbours (int) to which each node is connected.")
     parser.add_argument("-r", "--random", action="store_true", help="Random seeding of the RNG.")
     arguments = parser.parse_args()
 
     if connectivity_value is not None:
         arguments.connectivity = connectivity_value
+    if k_nearest_neighbours is not None:
+        arguments.knn = k_nearest_neighbours
 
     if arguments.hubs == 0 and arguments.connectivity is None:
         print("Usage error: Connectivity must be specified for node-only graph.")
@@ -230,6 +242,7 @@ def main():
             arguments.states,
             network,
             arguments.connectivity,
+            arguments.knn,
             random_instance
         )
 
@@ -298,6 +311,10 @@ def main():
                     # hub_loss_results[iter][test] = np.copy(hub_loss_results[iteration][test])
                 # Simulation has converged, so break main loop.
                 break
+
+        # Reset the static identity for the Agent class.
+        Agent.identity = 0
+
     print()
 
     # Recording of results. First, add parameters in sequence.
@@ -307,8 +324,15 @@ def main():
     file_name_params.append("{}a".format(arguments.agents))
     if arguments.hubs != 0:
         file_name_params.append("{}h".format(arguments.hubs))
-    if arguments.connectivity is not None:
-        file_name_params.append("{:.2f}con".format(arguments.connectivity))
+
+    if graph_type == "ER":
+        if arguments.connectivity is not None:
+            file_name_params.append("{:.2f}con".format(arguments.connectivity))
+    elif graph_type == "WS":
+        if arguments.connectivity is not None and arguments.knn is not None:
+            file_name_params.append("{}k".format(arguments.knn))
+            file_name_params.append("{:.2f}con".format(arguments.connectivity))
+
     file_name_params.append("{:.2f}er".format(evidence_rate))
     if noise_value is not None:
         file_name_params.append("{:.2f}nv".format(noise_value))
