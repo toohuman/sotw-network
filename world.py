@@ -35,11 +35,11 @@ demo_mode = False
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
 evidence_rate = 100/100
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
-noise_value = 0.2
+noise_value = 0.0
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
 connectivity_value = 0.0
-knn_values = [2,4,6]
-k_nearest_neighbours = 4
+knn_values = [2, 6, 10, 20, 50, 100]
+k_nearest_neighbours = 10
 
 # Set the initialisation function for agent beliefs - option to add additional
 # initialisation functions later.
@@ -190,6 +190,8 @@ def main():
         arguments.connectivity = connectivity_value
     if k_nearest_neighbours is not None:
         arguments.knn = k_nearest_neighbours
+        if arguments.knn > arguments.agents:
+            return
 
     if arguments.hubs == 0 and arguments.connectivity is None:
         print("Usage error: Connectivity must be specified for node-only graph.")
@@ -204,13 +206,15 @@ def main():
     directory = "../results/test_results/sotw-network/"
     file_name_params = []
 
-    print(
-        "States:", arguments.states,
-        "\t Agents:", arguments.agents,
-        "\t Connectivity:", arguments.connectivity, " - ", graph_type,
-        "\t Evidence rate:", evidence_rate,
-        "\t Noise value:", noise_value
-    )
+    param_strings = list()
+    param_strings += ["States: {}".format(arguments.states)]
+    param_strings += ["Agents: {}".format(arguments.agents)]
+    param_strings += ["Connectivity: {} | {}".format(arguments.connectivity, graph_type)]
+    if graph_type == "WS":
+        param_strings += ["k: {}".format(arguments.knn)]
+    param_strings += ["Evidence rate: {}".format(evidence_rate)]
+    param_strings += ["Noise value: {}".format(noise_value)]
+    print("\t".join(param_strings))
 
     # Structure should be [mean, std_dev, min, max]
     global_loss_results = [
@@ -357,7 +361,9 @@ def main():
 
 if __name__ == "__main__":
 
-    test_set = "standard" # "standard" | "evidence" | "noise" | "en" | "enc"
+    test_set = "ekc"
+
+    # "standard" | "evidence" | "noise" | "en" | "enc" | "ekc"
 
     if test_set == "standard":
 
@@ -409,4 +415,16 @@ if __name__ == "__main__":
 
                 for nv in noise_values:
                     noise_value = nv
+                    main()
+
+    elif test_set == "ekc":
+
+        for knn in knn_values:
+            k_nearest_neighbours = knn
+
+            for con in connectivity_values:
+                connectivity_value = con
+
+                for er in evidence_rates:
+                    evidence_rate = er
                     main()
