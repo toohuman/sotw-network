@@ -21,6 +21,7 @@ from utilities import results
 tests = 100
 iteration_limit = 10_000
 steady_state_threshold = 100
+trajectory_populations = [10, 50, 100]
 
 # Set the graph type
 # graph_type = "ER"     # Erdos-Reyni: random
@@ -33,13 +34,13 @@ evidence_only = False
 demo_mode = False
 
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
-evidence_rate = 100/100
+evidence_rate = 5/100
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
-noise_value = 0.0
+noise_value = 0.4
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
-connectivity_value = 0.0
+connectivity_value = 0.05
 knn_values = [2, 6, 10, 20, 50, 100]
-k_nearest_neighbours = 10
+k_nearest_neighbours = 100
 
 # Set the initialisation function for agent beliefs - option to add additional
 # initialisation functions later.
@@ -182,13 +183,13 @@ def main():
         They do not receive direct evidence.")
     parser.add_argument("-c", "--connectivity", type=float, help="Connectivity of the random graph in [0,1],\
         e.g., probability of an edge between any two nodes.")
-    parser.add_argument("-k", "--k-nearest-neighbours", type=float, help="k nearest neighbours (int) to which each node is connected.")
+    parser.add_argument("-k", "--knn", type=int, help="k nearest neighbours to which each node is connected.")
     parser.add_argument("-r", "--random", action="store_true", help="Random seeding of the RNG.")
     arguments = parser.parse_args()
 
-    if connectivity_value is not None:
+    if arguments.connectivity is None and connectivity_value is not None:
         arguments.connectivity = connectivity_value
-    if k_nearest_neighbours is not None:
+    if arguments.knn is None and k_nearest_neighbours is not None:
         arguments.knn = k_nearest_neighbours
         if arguments.knn > arguments.agents:
             return
@@ -342,9 +343,9 @@ def main():
         file_name_params.append("{:.2f}nv".format(noise_value))
 
     # Write loss results to pickle file
-
-    with lzma.open(directory + "loss" + '_' + '_'.join(file_name_params) + '.pkl.xz', 'wb') as file:
-        pickle.dump(global_loss_results, file)
+    if arguments.agents in trajectory_populations:
+        with lzma.open(directory + "loss" + '_' + '_'.join(file_name_params) + '.pkl.xz', 'wb') as file:
+            pickle.dump(global_loss_results, file)
 
     # results.write_to_file(
     #     directory,
@@ -361,9 +362,9 @@ def main():
 
 if __name__ == "__main__":
 
-    test_set = "ekc"
+    test_set = "ce"
 
-    # "standard" | "evidence" | "noise" | "en" | "enc" | "ekc"
+    # "standard" | "evidence" | "noise" | "en" | "ce" | "cen" | "kce"
 
     if test_set == "standard":
 
@@ -405,7 +406,16 @@ if __name__ == "__main__":
                 noise_value = nv
                 main()
 
-    elif test_set == "enc":
+    elif test_set == "ce":
+
+        for con in connectivity_values:
+            connectivity_value = con
+
+            for er in evidence_rates:
+                evidence_rate = er
+                main()
+
+    elif test_set == "cen":
 
         for con in connectivity_values:
             connectivity_value = con
@@ -417,7 +427,7 @@ if __name__ == "__main__":
                     noise_value = nv
                     main()
 
-    elif test_set == "ekc":
+    elif test_set == "kce":
 
         for knn in knn_values:
             k_nearest_neighbours = knn
