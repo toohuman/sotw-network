@@ -25,7 +25,10 @@ trajectory_populations = [10, 50, 100]
 
 # Set the graph type
 # graph_type = "ER"     # Erdos-Reyni: random
-graph_type = "WS"       # Watts-Strogatz: small-world
+# graph_type = "WS"       # Watts-Strogatz: small-world
+# graph_type = "Star"       # Star (hub-and-spoke) topology
+graph_type = "Ring"       # Ring topology
+# graph_type = "Line"       # Line topology
 # graph_type = "PATH:0" # Manually construct pathological cases, e.g., star, ring.
 
 mode = "symmetric" # ["symmetric" | "asymmetric"]
@@ -36,11 +39,12 @@ demo_mode = False
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
 evidence_rate = 5/100
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
-noise_value = 0.4
+noise_value = 0.5
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
-connectivity_value = 0.05
-knn_values = [2, 6, 10, 20, 50, 100]
-k_nearest_neighbours = 100
+connectivity_value = None
+# knn_values = [2, 4, 6, 8, 10, 20, 50]
+knn_values = [4, 8]
+k_nearest_neighbours = 10
 
 # Set the initialisation function for agent beliefs - option to add additional
 # initialisation functions later.
@@ -92,9 +96,17 @@ def initialisation(
         # and a connectivity parameter p
         elif graph_type == "WS":
             edges  += nx.watts_strogatz_graph(len(agents), knn, connectivity, random_instance).edges
-        # For Python 3.6+, dictionaries maintain a consistent order, so node/agent order
-        # should be maintained.
+        elif graph_type == "Star":
+            hub = random_instance.choice(range(len(agents)))
+            edges += [(hub, x) for x in range(len(agents)) if x != hub]
+        elif graph_type == "Ring":
+            edges += [(x, x+1) for x in range(len(agents) - 1)]
+            edges += [(len(agents)-1, 0)]
+        elif graph_type == "Line":
+            edges += [(x, x+1) for x in range(len(agents) - 1)]
 
+    # For Python 3.6+, dictionaries maintain a consistent order, so node/agent order
+    # should be maintained.
     edges = map(lambda x: (agents[x[0]], agents[x[1]]), edges)
     network.update(edges, agents)
 
@@ -194,7 +206,7 @@ def main():
         if arguments.knn > arguments.agents:
             return
 
-    if arguments.hubs == 0 and arguments.connectivity is None:
+    if arguments.hubs == 0 and arguments.connectivity is None and graph_type in ["ER", "WS"]:
         print("Usage error: Connectivity must be specified for node-only graph.")
         sys.exit(0)
 
@@ -337,6 +349,8 @@ def main():
         if arguments.connectivity is not None and arguments.knn is not None:
             file_name_params.append("{}k".format(arguments.knn))
             file_name_params.append("{:.2f}con".format(arguments.connectivity))
+    elif graph_type in ["Star", "Ring", "Line"]:
+        file_name_params.append("{}".format(graph_type))
 
     file_name_params.append("{:.2f}er".format(evidence_rate))
     if noise_value is not None:
@@ -362,7 +376,7 @@ def main():
 
 if __name__ == "__main__":
 
-    test_set = "ce"
+    test_set = "en"
 
     # "standard" | "evidence" | "noise" | "en" | "ce" | "cen" | "kce"
 
