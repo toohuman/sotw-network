@@ -80,7 +80,8 @@ for a, agents in enumerate(agents_set):
             # fig_ax =
 
             # plt.title("Average loss | {} states, {} agents, {} noise".format(agents, states, noise))
-            ax.set(xlabel='Connectivity', ylabel='Evidence rate')
+            ax.set(xlabel=r'Connectivity $p$', ylabel='Evidence rate')
             # plt.show()
+            plt.tight_layout()
             plt.savefig("../../results/graphs/sotw-network/hm_loss_{}_states_{}_agents_{:.2f}_noise_er_con.pdf".format(states, agents, noise), bbox_inches="tight")
             plt.clf()

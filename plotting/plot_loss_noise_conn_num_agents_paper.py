@@ -11,7 +11,7 @@ PERC_UPPER = 90
 states_set = [100]
 agents_set = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
-evidence_strings = ["{:.3f}".format(x) for x in evidence_rates]
+evidence_strings = ["{:.2f}".format(x) for x in evidence_rates]
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
 # connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
@@ -65,11 +65,12 @@ for s, states in enumerate(states_set):
             plt.xlabel("Agents")
             plt.ylabel("Average Error")
             if noise == 0:
-                plt.ylim(-0.01, 0.01)
+                plt.ylim(-0.2, 0.2)
             else:
                 plt.ylim(-0.01, noise + (noise * 0.1))
             # plt.title("Average loss | {} states, {} er, {} noise".format(states, er, noise))
             # plt.legend()
             # plt.show()
+            plt.tight_layout()
             plt.savefig("../../results/graphs/sotw-network/loss_{}_states_{:.2f}_er_{:.2f}_noise.pdf".format(states, er, noise, con))
             plt.clf()
