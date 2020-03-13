@@ -71,7 +71,5 @@ for s, states in enumerate(states_set):
             else:
                 plt.ylim(-0.01, noise + (noise * 0.1))
             plt.title("Average loss | {} states, {} er, {} noise".format(states, er, noise))
-            # plt.legend()
-            # plt.show()
             plt.savefig("../../results/graphs/sotw-network/loss_{}_states_{:.2f}_er_{:.2f}_noise.pdf".format(states, er, noise, con))
             plt.clf()

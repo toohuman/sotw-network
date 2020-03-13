@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import pickle
-import seaborn as sns; sns.set()
+import seaborn as sns; sns.set(font_scale=1.3)
 
 PERC_LOWER = 10
 PERC_UPPER = 90
@@ -66,7 +66,8 @@ for a, agents in enumerate(agents_set):
                 heatmap_results,
                 # center=0,
                 cmap=cmap,
-                cbar_kws={"shrink": .75},
+                cbar=False,
+                cbar_kws={"shrink": .75, "orientation": "horizontal"},
                 xticklabels=connectivity_strings,
                 yticklabels=list(reversed(evidence_strings)),
                 vmin=0, vmax=0.5,
@@ -76,12 +77,24 @@ for a, agents in enumerate(agents_set):
                 # fmt=".2f",
                 square=True
             )
-            # legend = plt.figure()
-            # fig_ax =
 
             # plt.title("Average loss | {} states, {} agents, {} noise".format(agents, states, noise))
+
+            # import pylab
+            # fig_legend = pylab.figure(figsize=(1,2))
+            # pylab.figlegend(*ax.get_legend_handles_labels(), loc="upper left")
+            # fig_legend.show()
+            # plt.show()
+
             ax.set(xlabel=r'Connectivity $p$', ylabel='Evidence rate')
             # plt.show()
             plt.tight_layout()
+
             plt.savefig("../../results/graphs/sotw-network/hm_loss_{}_states_{}_agents_{:.2f}_noise_er_con.pdf".format(states, agents, noise), bbox_inches="tight")
+
+            # ax.remove()
+            # plt.show()
+            # import time
+            # time.sleep(10)
+
             plt.clf()

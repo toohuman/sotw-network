@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import pickle
-import seaborn as sns; sns.set()
+import seaborn as sns; sns.set(font_scale=1.3)
 
 PERC_LOWER = 10
 PERC_UPPER = 90
@@ -69,6 +69,7 @@ for a, agents in enumerate(agents_set):
                     heatmap_results,
                     # center=0,
                     cmap=cmap,
+                    cbar=False,
                     cbar_kws={"shrink": .75},
                     xticklabels=connectivity_strings,
                     yticklabels=list(reversed(evidence_strings)),
@@ -83,8 +84,8 @@ for a, agents in enumerate(agents_set):
                 # fig_ax =
 
                 # plt.title("Average loss | {} states, {} agents, {} noise".format(agents, states, noise))
-                ax.set(xlabel=r'Rewiring $p$', ylabel='Evidence rate')
+                ax.set(xlabel=r'Rewiring probability $p$', ylabel='Evidence rate')
                 # plt.show()
                 plt.tight_layout()
-                plt.savefig("../../results/graphs/sotw-network/hm_loss_{}_states_{}_agents_{:.2f}_noise_{}_k_er_con.pdf".format(states, agents, noise, knn), bbox_inches="tight")
+                plt.savefig("../../results/graphs/sotw-network/hm_loss_WS_{}_states_{}_agents_{:.2f}_noise_{}_k_er_con.pdf".format(states, agents, noise, knn), bbox_inches="tight")
                 plt.clf()
