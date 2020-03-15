@@ -18,6 +18,10 @@ for a, agents in enumerate(agents_set):
             for k, knn in enumerate(knn_values):
                 if knn >= agents:
                     continue
+                print("{} Agents - {} Graph - {} conn - {} knn      "
+                    .format(
+                        agents, graph_type, conn, knn
+                    ), end="\r")
                 file_name_params = []
                 file_name_params.append("{}".format(graph_type))
                 file_name_params.append("{}a".format(agents))
@@ -26,37 +30,47 @@ for a, agents in enumerate(agents_set):
 
                 if graph_type == "ER" or graph_type == "WS":
                     file_name_params.append("{:.2f}con".format(conn))
+                    if graph_type == "WS":
+                        file_name_params.append("{}k".format(knn))
 
-                if graph_type == "ER":
-                    network = nx.gnp_random_graph(agents, conn)
-                elif graph_type == "WS":
-                    network = nx.watts_strogatz_graph(agents, knn, conn)
-                    file_name_params.append("{}k".format(knn))
-                elif graph_type == "Complete":
-                    network = nx.complete_graph(agents)
-                else:
-                    network = nx.Graph()
-                    edges = list()
-                    if graph_type == "Star":
-                        hub = random.choice(range(agents))
-                        edges += [(hub, x) for x in range(agents) if x != hub]
-                    elif graph_type == "Ring":
-                        edges += [(x, x+1) for x in range(agents - 1)]
-                        edges += [(agents-1, 0)]
-                    elif graph_type == "Line":
-                        edges += [(x, x+1) for x in range(agents - 1)]
+                path_lengths = list()
+                clustering_coeffs = list()
 
-                    network.add_edges_from(edges)
+                for iteration in range(100):
+                    if graph_type == "ER":
+                        network = nx.gnp_random_graph(agents, conn)
+                    elif graph_type == "WS":
+                        network = nx.watts_strogatz_graph(agents, knn, conn)
+                    elif graph_type == "Complete":
+                        network = nx.complete_graph(agents)
+                    else:
+                        network = nx.Graph()
+                        edges = list()
+                        if graph_type == "Star":
+                            hub = random.choice(range(agents))
+                            edges += [(hub, x) for x in range(agents) if x != hub]
+                        elif graph_type == "Ring":
+                            edges += [(x, x+1) for x in range(agents - 1)]
+                            edges += [(agents-1, 0)]
+                        elif graph_type == "Line":
+                            edges += [(x, x+1) for x in range(agents - 1)]
 
+                        network.add_edges_from(edges)
+
+                    try:
+                        path_lengths.append(nx.average_shortest_path_length(network))
+                    except nx.NetworkXError:
+                        path_lengths.append(0.0)
+                    clustering_coeffs.append(nx.average_clustering(network))
+
+
+                # Storing values as mean - min - max.
                 network_stats = [["path length", "clustering coefficient"]]
 
-                try:
-                    path_length = nx.average_shortest_path_length(network)
-                except nx.NetworkXError:
-                    path_length = 0.0
-                clustering_coefficient = nx.average_clustering(network)
-
-                network_stats.append([path_length, clustering_coefficient])
+                network_stats.append([
+                    [np.average(path_lengths), np.min(path_lengths), np.max(path_lengths)],
+                    [np.average(clustering_coeffs), np.min(clustering_coeffs), np.max(clustering_coeffs)]
+                ])
 
                 with open(directory + "network_stats" + '_' + '_'.join(file_name_params) + '.pkl', 'wb') as file:
                     pickle.dump(network_stats, file)
