@@ -34,7 +34,7 @@ for a, agents in enumerate(agents_set):
                         file_name_params.append("{}k".format(knn))
 
                 path_lengths = list()
-                clustering_coeffs = list()
+                cluster_coeffs = list()
 
                 for iteration in range(100):
                     if graph_type == "ER":
@@ -61,15 +61,15 @@ for a, agents in enumerate(agents_set):
                         path_lengths.append(nx.average_shortest_path_length(network))
                     except nx.NetworkXError:
                         path_lengths.append(0.0)
-                    clustering_coeffs.append(nx.average_clustering(network))
+                    cluster_coeffs.append(nx.average_clustering(network))
 
 
-                # Storing values as mean - min - max.
+                # Storing values as mean - std dev - min - max.
                 network_stats = [["path length", "clustering coefficient"]]
 
                 network_stats.append([
-                    [np.average(path_lengths), np.min(path_lengths), np.max(path_lengths)],
-                    [np.average(clustering_coeffs), np.min(clustering_coeffs), np.max(clustering_coeffs)]
+                    [np.average(path_lengths), np.std(path_lengths), np.min(path_lengths), np.max(path_lengths)],
+                    [np.average(cluster_coeffs), np.std(cluster_coeffs), np.min(cluster_coeffs), np.max(cluster_coeffs)]
                 ])
 
                 with open(directory + "network_stats" + '_' + '_'.join(file_name_params) + '.pkl', 'wb') as file:
