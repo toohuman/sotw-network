@@ -9,7 +9,7 @@ PERC_LOWER = 10
 PERC_UPPER = 90
 
 states_set = [100]
-agents_set = [100]
+agents_set = [50, 100]
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
 evidence_strings = ["{:.2f}".format(x) for x in evidence_rates]
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
@@ -73,6 +73,8 @@ for s, states in enumerate(states_set):
                 # sns.set_palette(sns.color_palette(flatui))
                 sns.set_palette("rocket", 8)
                 for k, knn in enumerate(knn_values):
+                    if knn >= agents:
+                        continue
                     ax = sns.lineplot(connectivity_values, results[k], linewidth = 2, label=knn_strings[k])
                 plt.axhline(noise, color="red", linestyle="dotted", linewidth = 2)
                 plt.xlabel(r'Rewiring probability $p$')
@@ -83,11 +85,11 @@ for s, states in enumerate(states_set):
                     plt.ylim(-0.01, noise + (noise * 0.1))
                 # plt.title("Average loss | {} states, {} er, {} noise".format(states, er, noise))
 
-                # ax.get_legend().remove()
+                ax.get_legend().remove()
 
                 # import pylab
                 # fig_legend = pylab.figure(figsize=(1,2))
-                # pylab.figlegend(*ax.get_legend_handles_labels(), loc="upper left", ncol=len(connectivity_strings))
+                # pylab.figlegend(*ax.get_legend_handles_labels(), loc="upper left", ncol=len(knn_strings))
                 # fig_legend.show()
                 # plt.show()
 
