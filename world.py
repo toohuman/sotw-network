@@ -24,12 +24,12 @@ steady_state_threshold = 100
 trajectory_populations = [10, 50, 100]
 
 # Set the graph type
-# graph_type = "ER"     # Erdos-Reyni: random
-# graph_type = "WS"       # Watts-Strogatz: small-world
+graph_type = "ER"         # Erdos-Reyni: random
+# graph_type = "WS"         # Watts-Strogatz: small-world
 # graph_type = "Star"       # Star (hub-and-spoke) topology
-graph_type = "Ring"       # Ring topology
+# graph_type = "Ring"       # Ring topology
 # graph_type = "Line"       # Line topology
-# graph_type = "PATH:0" # Manually construct pathological cases, e.g., star, ring.
+# graph_type = "PATH:0"     # Manually construct pathological cases, e.g., star, ring.
 
 mode = "symmetric" # ["symmetric" | "asymmetric"]
 evidence_only = False
@@ -37,14 +37,13 @@ evidence_only = False
 demo_mode = False
 
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
-evidence_rate = 5/100
+evidence_rate = None
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
-noise_value = 0.5
+noise_value = None
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
-connectivity_value = None
-# knn_values = [2, 4, 6, 8, 10, 20, 50]
-knn_values = [4, 8]
-k_nearest_neighbours = 10
+connectivity_value = 1.0
+knn_values = [2, 4, 6, 8, 10, 20, 50]
+k_nearest_neighbours = None
 
 # Set the initialisation function for agent beliefs - option to add additional
 # initialisation functions later.
@@ -113,23 +112,35 @@ def initialisation(
     return
 
 def main_loop(
-    states: int, network, true_state: [], mode: str, random_instance
+    states: int, network, true_state: [], mode: str, random_instance,
+    entropy_data, error_data
 ):
     """
     The main loop performs various actions in sequence until certain conditions are
     met, or the maximum number of iterations is reached.
     """
 
+    # Format: before, after evidence, after consensus.
+    entropy_distributions = [0 for x in range(states)]
+    entropy_diffs = [0 for x in range(states)]
+    prior_belief = None
+
     # For each agent, provided that the agent is to receive evidence this iteration
     # according to the current evidence rate, have the agent perform evidential
     # updating.
     reached_convergence = True
     for agent in network.nodes:
+        # Generate prior distribution
+        for s, state in enumerate(agent.belief):
+            entropy_distributions[s] += state
 
         # Hubs do not receive direct evidence, only updating their beliefs based on
         # information from other nodes.
         # if isinstance(agent, Node) and random_instance.random() <= evidence_rate:
         if random_instance.random() <= evidence_rate:
+
+            prior_belief = agent.belief
+            print(prior_belief)
 
             # Generate a random piece of evidence, selecting from the set of unknown states.
             evidence = beliefs.random_evidence(
@@ -140,6 +151,8 @@ def main_loop(
                 random_instance
             )
             agent.evidential_updating(operators.combine(agent.belief, evidence))
+
+
 
         reached_convergence &= agent.steady_state(steady_state_threshold)
 
@@ -229,17 +242,21 @@ def main():
     param_strings += ["Noise value: {}".format(noise_value)]
     print("\t".join(param_strings))
 
-    # Structure should be [mean, std_dev, min, max]
-    global_loss_results = [
-        [ [0.0 for x in range(4)] for y in range(tests) ] for z in range(iteration_limit + 1)
-    ]
-    global_loss_results = np.array(global_loss_results)
-    # node_loss_results = np.copy(global_loss_results)
-    # hub_loss_results = np.copy(global_loss_results)
-    steady_state_results = [
-        [ 0.0 for y in range(arguments.agents) ] for z in range(tests)
-    ]
-    steady_state_results = np.array(steady_state_results)
+    # Structure is [mean, std_dev, min, max]
+    loss_results = np.array([
+        [[0.0 for x in range(4)] for y in range(tests)] for z in range(iteration_limit + 1)
+    ])
+    # Structure is [combined_info_gain, evidence_info_gain, consensus_info_gain]
+    entropy_results = np.array([
+        [[0.0 for x in range(3)] for y in range(tests)] for z in range(iteration_limit)
+    ])
+    # Structure is [combined_error, evidence_error, consensus_error]
+    error_results = np.array([
+        [[0.0 for x in range(3)] for y in range(tests)] for z in range(iteration_limit)
+    ])
+    steady_state_results = np.array([
+        [0.0 for x in range(arguments.agents)] for y in range(tests)
+    ])
 
     # Repeat the initialisation and loop for the number of simulation runs required
     max_iteration = 0
@@ -270,12 +287,15 @@ def main():
         for a, agent in enumerate(network.nodes):
             loss_values[a] = results.loss(agent.belief, true_state)
 
-        global_loss_results[0][test] = [
+        loss_results[0][test] = [
             np.average(loss_values),
             np.std(loss_values),
             np.min(loss_values),
             np.max(loss_values)
         ]
+
+        entropy_data = [0.0 for x in range(3)]
+        error_data = [0.0 for x in range(3)]
 
         # Main loop of the experiments. Starts at 1 because we have recorded the agents'
         # initial state above, at the "0th" index.
@@ -284,18 +304,17 @@ def main():
 
             max_iteration = iteration if iteration > max_iteration else max_iteration
             # While not converged, continue to run the main loop.
-            if main_loop(arguments.states, network, true_state, mode, random_instance):
+            if main_loop(
+                arguments.states, network, true_state, mode, random_instance,
+                entropy_data, error_data
+            ):
                 for a, agent in enumerate(network.nodes):
                     loss = results.loss(agent.belief, true_state)
                     loss_values[a] = loss
-                    # if isinstance(agent, Node):
-                    #     node_loss_results[iteration][test] += results.loss(agent.belief, true_state)
-                    # elif isinstance(agent, Hub):
-                    #     hub_loss_results[iteration][test] += results.loss(agent.belief, true_state)
                     if iteration == iteration_limit:
                         steady_state_results[test][a] = loss
 
-                global_loss_results[iteration][test] = [
+                loss_results[iteration][test] = [
                     np.average(loss_values),
                     np.std(loss_values),
                     np.min(loss_values),
@@ -304,18 +323,13 @@ def main():
 
             # If the simulation has converged, end the test.
             else:
-                # print("Converged: ", iteration)
                 for a, agent in enumerate(network.nodes):
                     loss = results.loss(agent.belief, true_state)
                     loss_values[a] = loss
-                    # global_loss_results[iteration][test] += loss
-                    # if isinstance(agent, Node):
-                    #     node_loss_results[iteration][test] += results.loss(agent.belief, true_state)
-                    # elif isinstance(agent, Hub):
-                    #     hub_loss_results[iteration][test] += results.loss(agent.belief, true_state)
+                    # loss_results[iteration][test] += loss
                     steady_state_results[test][a] = loss
 
-                global_loss_results[iteration][test] = [
+                loss_results[iteration][test] = [
                     np.average(loss_values),
                     np.std(loss_values),
                     np.min(loss_values),
@@ -323,9 +337,7 @@ def main():
                 ]
 
                 for iter in range(iteration + 1, iteration_limit + 1):
-                    global_loss_results[iter][test] = np.copy(global_loss_results[iteration][test])
-                    # node_loss_results[iter][test] = np.copy(node_loss_results[iteration][test])
-                    # hub_loss_results[iter][test] = np.copy(hub_loss_results[iteration][test])
+                    loss_results[iter][test] = np.copy(loss_results[iteration][test])
                 # Simulation has converged, so break main loop.
                 break
 
@@ -336,7 +348,6 @@ def main():
 
     # Recording of results. First, add parameters in sequence.
 
-    # Networkx params
     file_name_params.append("{}s".format(arguments.states))
     file_name_params.append("{}a".format(arguments.agents))
     if arguments.hubs != 0:
@@ -359,7 +370,7 @@ def main():
     # Write loss results to pickle file
     if arguments.agents in trajectory_populations:
         with lzma.open(directory + "loss" + '_' + '_'.join(file_name_params) + '.pkl.xz', 'wb') as file:
-            pickle.dump(global_loss_results, file)
+            pickle.dump(loss_results, file)
 
     # results.write_to_file(
     #     directory,
@@ -371,8 +382,6 @@ def main():
 
     with lzma.open(directory + "steady_state_loss" + '_' + '_'.join(file_name_params) + '.pkl.xz', 'wb') as file:
         pickle.dump(steady_state_results, file)
-
-    # TODO: Implement hub/node separation results using networkx.
 
 if __name__ == "__main__":
 
