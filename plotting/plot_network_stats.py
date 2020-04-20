@@ -6,89 +6,164 @@ import pickle
 import seaborn as sns; sns.set(font_scale=1.3)
 
 states_set = [100]
-agents_set = [10, 50, 100]
+agents_set = list(range(10, 101, 10))
 graph_types = ["ER", "WS", "Complete", "Star", "Ring", "Line"]
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
 knn_values = [2, 4, 6, 8, 10, 20, 50]
+line_labels = ["path length", "clustering coefficient"]
 
 result_directory = "../../results/test_results/sotw-network/"
 
-for s, states in enumerate(states_set):
-    for e, er in enumerate(reversed(evidence_rates)):
-        for n, noise in enumerate(noise_values):
-            for a, agents in enumerate(agents_set):
+for g, graph_type in enumerate(graph_types):
 
-                results = np.array([[0.0 for x in connectivity_values] for y in knn_values])
-                data = None
+    network_stats = []
 
-                skip = True
+    for a, agents in enumerate(agents_set):
 
-                for k, knn in enumerate(knn_values):
-                    for c, con in enumerate(connectivity_values):
-                        if knn >= agents:
-                            continue
-
-                        file_name_parts = [
-                            "steady_state_loss",
-                            "{}s".format(states),
-                            "{}a".format(agents),
-                            "{}k".format(knn),
-                            "{:.2f}con".format(con),
-                            "{:.2f}er".format(er),
-                            "{:.2f}nv".format(noise)
-                        ]
-                        file_ext = ".pkl.xz"
-                        file_name = "_".join(map(lambda x: str(x), file_name_parts)) + file_ext
-
-                        print(file_name)
-
-                        file_contents = list()
-
-                        try:
-                            with lzma.open(result_directory + file_name, "rb") as file:
-                                data = pickle.load(file)
-                                print(data)
-
-                        except FileNotFoundError:
-                            print("MISSING: " + file_name)
-                            continue
-
-                        results[k][c] = np.average([np.average(x) for x in data])
-
-                        skip = False
-
-                    if skip:
-                        continue
-
-                # print(results)
-
-                # flatui = ["#9b59b6", "#3498db", "#95a5a6", "#e74c3c", "#34495e", "#2ecc71"]
-                # sns.set_palette(sns.color_palette(flatui))
-                sns.set_palette("rocket", 8)
-                for k, knn in enumerate(knn_values):
-                    if knn >= agents:
-                        continue
-                    ax = sns.lineplot(connectivity_values, results[k], linewidth = 2, label=knn_strings[k])
-                plt.axhline(noise, color="red", linestyle="dotted", linewidth = 2)
-                plt.xlabel(r'Rewiring probability $p$')
-                plt.ylabel("Average Error")
-                if noise == 0:
-                    plt.ylim(-0.2, 0.2)
+        for c, conn in enumerate(connectivity_values):
+            for k, knn in enumerate(knn_values):
+                if knn >= agents:
+                    continue
+                if graph_type in ["ER", "WS"]:
+                    print(
+                        "{} Agents - {} Graph - {} conn - {} knn      "
+                        .format(
+                            agents, graph_type, conn, knn
+                        ),
+                        end="\r"
+                    )
                 else:
-                    plt.ylim(-0.01, noise + (noise * 0.1))
-                # plt.title("Average loss | {} states, {} er, {} noise".format(states, er, noise))
+                    print(
+                        "{} Agents - {} Graph                         "
+                        .format(agents, graph_type), end="\r"
+                    )
+                file_name_params = []
+                file_name_params.append("{}".format(graph_type))
+                file_name_params.append("{}a".format(agents))
 
-                ax.get_legend().remove()
+                if graph_type == "ER" or graph_type == "WS":
+                    file_name_params.append("{:.2f}con".format(conn))
+                    if graph_type == "WS":
+                        file_name_params.append("{}k".format(knn))
 
-                # import pylab
-                # fig_legend = pylab.figure(figsize=(1,2))
-                # pylab.figlegend(*ax.get_legend_handles_labels(), loc="upper left", ncol=len(knn_strings))
-                # fig_legend.show()
-                # plt.show()
+                file_name = "network_stats" + '_' + '_'.join(file_name_params)
 
-                # import time
-                # time.sleep(10)
+                # Values stored as: mean - std dev - min - max.
+                try:
+                    with open(result_directory + file_name + '.pkl', 'rb') as file:
+                        temp = pickle.load(file)
+                        network_stats.append(temp[1])
 
-                plt.tight_layout()
-                plt.savefig("../../results/graphs/sotw-network/loss_WS_{}_states_{}_agents_{:.2f}_er_{:.2f}_noise.pdf".format(states, agents, er, noise))
-                plt.clf()
+                except FileNotFoundError:
+                    print("\n MISSSING: ", file_name)
+                    continue
+
+                if graph_type != "WS":
+                    break
+            if graph_type == "Complete":
+                break
+
+    if graph_type not in ["ER", "WS"]:
+
+        file_name = "network_stats_{}.pdf".format(graph_type)
+        sns.set_palette("rocket", 2)
+
+        print(network_stats[0])
+
+        results = [[network_stats[i][j][0] for i in range(len(agents_set))] for j in range(2)]
+        std_dev = [[network_stats[i][j][1] for i in range(len(agents_set))] for j in range(2)]
+        print(results)
+        print(std_dev)
+        print(graph_type)
+
+        for i in range(2):
+            ax = sns.lineplot(agents_set, results[i], linewidth = 2, label=line_labels[i])
+            plt.fill_between(agents_set, np.subtract(results[i], std_dev[i]), np.add(results[i], std_dev[i]), alpha=.3)
+        plt.xlabel("Agents")
+        plt.ylabel("")
+
+        # ax.get_legend().remove()
+
+        # import pylab
+        # fig_legend = pylab.figure(figsize=(1,2))
+        # pylab.figlegend(*ax.get_legend_handles_labels(), loc="upper left", ncol=len(knn_strings))
+        # fig_legend.show()
+        # plt.show()
+
+        # import time
+        # time.sleep(10)
+
+        plt.tight_layout()
+        plt.show()
+        # plt.savefig("../../results/graphs/sotw-network/loss_WS_{}_states_{}_agents_{:.2f}_er_{:.2f}_noise.pdf".format(states, agents, er, noise))
+        plt.clf()
+
+    elif:
+
+        file_name = "network_stats_{}.pdf".format(graph_type)
+        sns.set_palette("rocket", 2)
+
+        print(network_stats[0])
+
+        results = [[network_stats[i][j][0] for i in range(len(agents_set))] for j in range(2)]
+        std_dev = [[network_stats[i][j][1] for i in range(len(agents_set))] for j in range(2)]
+        print(results)
+        print(std_dev)
+        print(graph_type)
+
+        for i in range(2):
+            ax = sns.lineplot(agents_set, results[i], linewidth = 2, label=line_labels[i])
+            plt.fill_between(agents_set, np.subtract(results[i], std_dev[i]), np.add(results[i], std_dev[i]), alpha=.3)
+        plt.xlabel("Agents")
+        plt.ylabel("")
+
+        # ax.get_legend().remove()
+
+        # import pylab
+        # fig_legend = pylab.figure(figsize=(1,2))
+        # pylab.figlegend(*ax.get_legend_handles_labels(), loc="upper left", ncol=len(knn_strings))
+        # fig_legend.show()
+        # plt.show()
+
+        # import time
+        # time.sleep(10)
+
+        plt.tight_layout()
+        plt.show()
+        # plt.savefig("../../results/graphs/sotw-network/loss_WS_{}_states_{}_agents_{:.2f}_er_{:.2f}_noise.pdf".format(states, agents, er, noise))
+        plt.clf()
+
+    else:
+
+        file_name = "network_stats_{}.pdf".format(graph_type)
+        sns.set_palette("rocket", 2)
+
+        print(network_stats[0])
+
+        results = [[network_stats[i][j][0] for i in range(len(agents_set))] for j in range(2)]
+        std_dev = [[network_stats[i][j][1] for i in range(len(agents_set))] for j in range(2)]
+        print(results)
+        print(std_dev)
+        print(graph_type)
+
+        for i in range(2):
+            ax = sns.lineplot(agents_set, results[i], linewidth = 2, label=line_labels[i])
+            plt.fill_between(agents_set, np.subtract(results[i], std_dev[i]), np.add(results[i], std_dev[i]), alpha=.3)
+        plt.xlabel("Agents")
+        plt.ylabel("")
+
+        # ax.get_legend().remove()
+
+        # import pylab
+        # fig_legend = pylab.figure(figsize=(1,2))
+        # pylab.figlegend(*ax.get_legend_handles_labels(), loc="upper left", ncol=len(knn_strings))
+        # fig_legend.show()
+        # plt.show()
+
+        # import time
+        # time.sleep(10)
+
+        plt.tight_layout()
+        plt.show()
+        # plt.savefig("../../results/graphs/sotw-network/loss_WS_{}_states_{}_agents_{:.2f}_er_{:.2f}_noise.pdf".format(states, agents, er, noise))
+        plt.clf()

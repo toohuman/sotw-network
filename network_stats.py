@@ -7,7 +7,7 @@ import random
 # Results variables
 directory = "../results/test_results/sotw-network/"
 
-agents_set = [10, 50, 100]
+agents_set = list(range(10, 101, 10))
 graph_types = ["ER", "WS", "Complete", "Star", "Ring", "Line"]
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
 knn_values = [2, 4, 6, 8, 10, 20, 50]
@@ -18,11 +18,14 @@ for a, agents in enumerate(agents_set):
             for k, knn in enumerate(knn_values):
                 if knn >= agents:
                     continue
-                print("{} Agents - {} Graph - {} conn - {} knn      "
+                print(
+                    "{} Agents - {} Graph - {} conn - {} knn      "
                     .format(
                         agents, graph_type, conn, knn
-                    ), end="\r")
-                file_name_params = []
+                    ),
+                    end="\r"
+                )
+                file_name_params = list()
                 file_name_params.append("{}".format(graph_type))
                 file_name_params.append("{}a".format(agents))
 
