@@ -19,7 +19,7 @@ connectivity_strings = ["{:.2f}".format(x) for x in connectivity_values]
 result_directory = "../../results/test_results/sotw-network/"
 
 for s, states in enumerate(states_set):
-    for e, er in enumerate(reversed(evidence_rates)):
+    for e, er in enumerate(evidence_rates):
         for n, noise in enumerate(noise_values):
 
             results = np.array([[0.0 for x in agents_set] for y in connectivity_values])
@@ -28,7 +28,6 @@ for s, states in enumerate(states_set):
             skip = True
 
             for c, con in enumerate(connectivity_values):
-
                 for a, agents in enumerate(agents_set):
                     file_name_parts = [
                         "steady_state_loss",
