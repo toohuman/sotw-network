@@ -22,6 +22,8 @@ for s, states in enumerate(states_set):
     for n, noise in enumerate(noise_values):
 
         results = np.array([[0.0 for x in agents_set] for y in evidence_rates])
+        lowers = np.array([[0.0 for x in agents_set] for y in evidence_rates])
+        uppers = np.array([[0.0 for x in agents_set] for y in evidence_rates])
         data = None
 
         skip = True
@@ -46,19 +48,29 @@ for s, states in enumerate(states_set):
                 except FileNotFoundError:
                     print("MISSING: " + file_name)
 
-                results[e][a] = np.average([np.average(x) for x in data])
+                data = sorted([np.average(x) for x in data])
+                lowers[e][a] = data[PERC_LOWER - 1]
+                uppers[e][a] = data[PERC_UPPER - 1]
+                results[e][a] = np.average(data)
 
                 skip = False
 
             if skip:
                 continue
 
-        print(results)
+        print("Average Error: {} states | {:.2f} noise".format(states, noise))
+        for e, er in enumerate(evidence_rates):
+            print("   [{:.2f} er]:  ".format(er), end="")
+            for a, agents in enumerate(agents_set):
+                print("[{}a]: {:.3f}".format(agents, results[e][a]), end=" ")
+            print("")
+
         # flatui = ["#9b59b6", "#3498db", "#95a5a6", "#e74c3c", "#34495e", "#2ecc71"]
         # sns.set_palette(sns.color_palette(flatui))
-        sns.set_palette("rocket", 8)
+        sns.set_palette("rocket", len(evidence_rates))
         for e, er in enumerate(evidence_rates):
-            ax = sns.lineplot(agents_set, results[e], linewidth = 2, label=evidence_strings[e])
+            ax = sns.lineplot(agents_set, results[e], linewidth = 2, color=sns.color_palette()[e], label=evidence_strings[e])
+            plt.fill_between(agents_set, lowers[e], uppers[e], facecolor=sns.color_palette()[e], edgecolor="none", alpha=0.2, antialiased=True)
         plt.axhline(noise, color="red", linestyle="dotted", linewidth = 2)
         plt.xlabel("Agents")
         plt.ylabel("Average Error")

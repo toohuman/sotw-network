@@ -26,6 +26,8 @@ for s, states in enumerate(states_set):
         for a, agents in enumerate(agents_set):
 
             results = np.array([[0.0 for x in iterations] for y in evidence_rates])
+            lowers = np.array([[0.0 for x in iterations] for y in evidence_rates])
+            uppers = np.array([[0.0 for x in iterations] for y in evidence_rates])
             data = None
 
             for e, er in enumerate(evidence_rates):
@@ -48,6 +50,9 @@ for s, states in enumerate(states_set):
                     print("MISSING: " + file_name)
 
                 for i, tests in enumerate(data):
+                    sorted_data = sorted([x[0] for x in tests])
+                    lowers[e][i] = sorted_data[PERC_LOWER - 1]
+                    uppers[e][i] = sorted_data[PERC_UPPER - 1]
                     results[e][i] = np.average([x[0] for x in tests])
 
             # print(results)
@@ -68,20 +73,22 @@ for s, states in enumerate(states_set):
 
             max_iteration += 50 if not iterations_maxed else int(len(iterations)/2)
 
-            print("{} states | {} agents | {} noise".format(states, agents, noise))
+            print("{} states | {} agents | {:.2f} noise".format(states, agents, noise))
             for e, er in enumerate(evidence_rates):
-                print("   {:.2f}er : {}t".format(er, convergence_times[e]))
+                print("   [{:.2f} er]: {} t".format(er, convergence_times[e]))
 
 
             # flatui = ["#9b59b6", "#3498db", "#95a5a6", "#e74c3c", "#34495e", "#2ecc71"]
             # sns.set_palette(sns.color_palette(flatui))
-            sns.set_palette("rocket", 8)
+            sns.set_palette("rocket", len(evidence_rates))
             for e, er in enumerate(evidence_rates):
-                ax = sns.lineplot(iterations, results[e], linewidth = 2, label=evidence_strings[e])
+                ax = sns.lineplot(iterations, results[e], linewidth = 2, color=sns.color_palette()[e], label=evidence_strings[e])
+                plt.fill_between(iterations, lowers[e], uppers[e], facecolor=sns.color_palette()[e], edgecolor="none", alpha=0.2, antialiased=True)
             plt.xlabel(r'Time $t$')
             plt.ylabel("Average Error")
             plt.ylim(-0.01, 0.525)
-            plt.xlim(0, 1200)
+            # plt.xlim(0, 1400)
+            plt.xlim(0, 5000)
             # plt.title("Average loss | {} states, {} er, {} noise".format(states, er, noise))
 
             ax.get_legend().remove()

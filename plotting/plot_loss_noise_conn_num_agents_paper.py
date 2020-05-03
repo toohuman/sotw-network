@@ -23,6 +23,8 @@ for s, states in enumerate(states_set):
         for n, noise in enumerate(noise_values):
 
             results = np.array([[0.0 for x in agents_set] for y in connectivity_values])
+            lowers = np.array([[0.0 for x in agents_set] for y in connectivity_values])
+            uppers = np.array([[0.0 for x in agents_set] for y in connectivity_values])
             data = None
 
             skip = True
@@ -49,19 +51,30 @@ for s, states in enumerate(states_set):
                     except FileNotFoundError:
                         print("MISSING: " + file_name)
 
-                    results[c][a] = np.average([np.average(x) for x in data])
+                    data = sorted([np.average(x) for x in data])
+                    lowers[c][a] = data[PERC_LOWER - 1]
+                    uppers[c][a] = data[PERC_UPPER - 1]
+                    results[c][a] = np.average(data)
 
                     skip = False
 
                 if skip:
                     continue
 
-            print(results)
+
+            print("Average Error: {} states | {:.2f} er | {:.2f} noise".format(states, er, noise))
+            for c, con in enumerate(connectivity_values):
+                print("   [{:.2f} con]:  ".format(con), end="")
+                for a, agents in enumerate(agents_set):
+                    print("[{}a]: {:.3f}".format(agents, results[c][a]), end=" ")
+                print("")
+
             # flatui = ["#9b59b6", "#3498db", "#95a5a6", "#e74c3c", "#34495e", "#2ecc71"]
             # sns.set_palette(sns.color_palette(flatui))
-            sns.set_palette("rocket", 8)
+            sns.set_palette("rocket", len(connectivity_values))
             for c, con in enumerate(connectivity_values):
-                ax = sns.lineplot(agents_set, results[c], linewidth = 2, label=connectivity_strings[c])
+                ax = sns.lineplot(agents_set, results[c], linewidth = 2, color=sns.color_palette()[c], label=connectivity_strings[c])
+                plt.fill_between(agents_set, lowers[c], uppers[c], facecolor=sns.color_palette()[c], edgecolor="none", alpha=0.2, antialiased=True)
             plt.axhline(noise, color="red", linestyle="dotted", linewidth = 2)
             plt.xlabel("Agents")
             plt.ylabel("Average Error")
