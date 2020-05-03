@@ -24,12 +24,13 @@ steady_state_threshold = 100
 trajectory_populations = [10, 50, 100]
 
 # Set the graph type
-graph_type = "ER"         # Erdos-Reyni: random
+# graph_type = "ER"         # Erdos-Reyni: random
 # graph_type = "WS"         # Watts-Strogatz: small-world
 # graph_type = "Star"       # Star (hub-and-spoke) topology
 # graph_type = "Ring"       # Ring topology
 # graph_type = "Line"       # Line topology
-# graph_type = "PATH:0"     # Manually construct pathological cases, e.g., star, ring.
+graph_type = "Caveman"      # Caveman topology
+# graph_type = "Constar"      # Connected mini-stars topology
 
 mode = "symmetric" # ["symmetric" | "asymmetric"]
 evidence_only = False
@@ -50,7 +51,7 @@ k_nearest_neighbours = None
 init_beliefs = beliefs.ignorant_belief
 
 # TODO:
-# 1. Remove separate agents(nodes) and edges lists, using only network instead.
+# 1. Remove separate agents(nodes) and edges lists, using only networkx instead.
 
 def initialisation(
     num_of_agents, num_of_hubs, states, network, connectivity, knn, random_instance
@@ -80,8 +81,16 @@ def initialisation(
 
         # Finally, generate a list of edges in which each hub is connected to all of its
         # respective nodes and each hub is also connected to every other hub.
-        edges += [((num_of_hubs * num_of_agents) + i, (i * num_of_agents) + j) for i in range(num_of_hubs) for j in range(num_of_agents)]
-        edges += [((num_of_hubs * num_of_agents) + i, (num_of_hubs * num_of_agents) + j) for i in range(num_of_hubs) for j in range(i + 1, num_of_hubs)]
+        edges += [
+            ((num_of_hubs * num_of_agents) + i, (i * num_of_agents) + j)\
+            for i in range(num_of_hubs)\
+            for j in range(num_of_agents)
+        ]
+        edges += [
+            ((num_of_hubs * num_of_agents) + i, (num_of_hubs * num_of_agents) + j)\
+            for i in range(num_of_hubs)\
+            for j in range(i + 1, num_of_hubs)
+        ]
 
         # A complete graph using networkx:
         # network = nx.complete_graph(agents)
@@ -99,10 +108,45 @@ def initialisation(
             hub = random_instance.choice(range(len(agents)))
             edges += [(hub, x) for x in range(len(agents)) if x != hub]
         elif graph_type == "Ring":
-            edges += [(x, x+1) for x in range(len(agents) - 1)]
-            edges += [(len(agents)-1, 0)]
+            edges += [(x, x + 1) for x in range(len(agents) - 1)]
+            edges += [(len(agents) - 1, 0)]
         elif graph_type == "Line":
-            edges += [(x, x+1) for x in range(len(agents) - 1)]
+            edges += [(x, x + 1) for x in range(len(agents) - 1)]
+        elif graph_type == "Caveman":
+            # We place small complete graphs around a ring where each complete graph is
+            # connected to the ring via a single node.
+            cave_size = 5
+            if num_of_agents % cave_size != 0:
+                sys.exit("Number of agents is not divisible by {}: required for Caveman network.".format(cave_size))
+            agent_indices = [x for x in range(num_of_agents)]
+            random_instance.shuffle(agent_indices)
+            hubs = [agent_indices.pop() for x in range(int(num_of_agents / cave_size))]
+            # First, connect the hubs together in a ring.
+            edges += [(hubs[x], hubs[x + 1]) for x in range(len(hubs) - 1)]
+            edges += [(hubs[-1], hubs[0])]
+            # Then, create the complete graphs attached to each hub node.
+            pick = int(len(agent_indices) / len(hubs))
+            for hub in hubs:
+                chosen_nodes = [hub]
+                chosen_nodes += [agent_indices.pop() for x in range(pick)]
+                edges += [(x, y) for i, x in enumerate(chosen_nodes[:-1]) for y in chosen_nodes[i+1:]]
+        elif graph_type == "Constar":
+            # We place star networks around a ring where each star is
+            # connected to the ring via the central hub.
+            star_size = 5
+            if num_of_agents % star_size != 0:
+                sys.exit("Number of agents is not divisible by {}: required for Connected Star network.".format(star_size))
+            agent_indices = [x for x in range(num_of_agents)]
+            random_instance.shuffle(agent_indices)
+            hubs = [agent_indices.pop() for x in range(int(num_of_agents / star_size))]
+            # First, connect the hubs together in a ring.
+            edges += [(hubs[x], hubs[x + 1]) for x in range(len(hubs) - 1)]
+            edges += [(hubs[-1], hubs[0])]
+            # Then, create the star graphs attached to each hub node.
+            pick = int(len(agent_indices) / len(hubs))
+            for hub in hubs:
+                chosen_nodes = [agent_indices.pop() for x in range(pick)]
+                edges += [(hub, x) for x in chosen_nodes if x != hub]
 
     # For Python 3.6+, dictionaries maintain a consistent order, so node/agent order
     # should be maintained.
@@ -140,7 +184,6 @@ def main_loop(
         if random_instance.random() <= evidence_rate:
 
             prior_belief = agent.belief
-            print(prior_belief)
 
             # Generate a random piece of evidence, selecting from the set of unknown states.
             evidence = beliefs.random_evidence(
@@ -360,7 +403,7 @@ def main():
         if arguments.connectivity is not None and arguments.knn is not None:
             file_name_params.append("{}k".format(arguments.knn))
             file_name_params.append("{:.2f}con".format(arguments.connectivity))
-    elif graph_type in ["Star", "Ring", "Line"]:
+    elif graph_type in ["Star", "Ring", "Line", "Caveman", "Constar"]:
         file_name_params.append("{}".format(graph_type))
 
     file_name_params.append("{:.2f}er".format(evidence_rate))
@@ -385,7 +428,7 @@ def main():
 
 if __name__ == "__main__":
 
-    test_set = "en"
+    test_set = "evidence"
 
     # "standard" | "evidence" | "noise" | "en" | "ce" | "cen" | "kce"
 
