@@ -343,7 +343,7 @@ def main():
         # Main loop of the experiments. Starts at 1 because we have recorded the agents'
         # initial state above, at the "0th" index.
         for iteration in range(1, iteration_limit + 1):
-            print("Test #{} - Iteration #{}    ".format(test, iteration), end="\r")
+            print("Test #{} - Iteration #{}    ".format(test + 1, iteration), end="\r")
 
             max_iteration = iteration if iteration > max_iteration else max_iteration
             # While not converged, continue to run the main loop.
