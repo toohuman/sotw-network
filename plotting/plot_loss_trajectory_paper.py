@@ -83,12 +83,12 @@ for s, states in enumerate(states_set):
             sns.set_palette("rocket", len(evidence_rates))
             for e, er in enumerate(evidence_rates):
                 ax = sns.lineplot(iterations, results[e], linewidth = 2, color=sns.color_palette()[e], label=evidence_strings[e])
-                plt.fill_between(iterations, lowers[e], uppers[e], facecolor=sns.color_palette()[e], edgecolor="none", alpha=0.2, antialiased=True)
+                plt.fill_between(iterations, lowers[e], uppers[e], facecolor=sns.color_palette()[e], edgecolor="none", alpha=0.3, antialiased=True)
             plt.xlabel(r'Time $t$')
             plt.ylabel("Average Error")
             plt.ylim(-0.01, 0.525)
-            # plt.xlim(0, 1400)
-            plt.xlim(0, 5000)
+            plt.xlim(0, 1400)
+            # plt.xlim(0, 5000)
             # plt.title("Average loss | {} states, {} er, {} noise".format(states, er, noise))
 
             ax.get_legend().remove()

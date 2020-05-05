@@ -74,14 +74,16 @@ for s, states in enumerate(states_set):
             sns.set_palette("rocket", len(connectivity_values))
             for c, con in enumerate(connectivity_values):
                 ax = sns.lineplot(agents_set, results[c], linewidth = 2, color=sns.color_palette()[c], label=connectivity_strings[c])
-                plt.fill_between(agents_set, lowers[c], uppers[c], facecolor=sns.color_palette()[c], edgecolor="none", alpha=0.2, antialiased=True)
+                plt.fill_between(agents_set, lowers[c], uppers[c], facecolor=sns.color_palette()[c], edgecolor="none", alpha=0.3, antialiased=True)
             plt.axhline(noise, color="red", linestyle="dotted", linewidth = 2)
             plt.xlabel("Agents")
             plt.ylabel("Average Error")
             if noise == 0:
-                plt.ylim(-0.2, 0.2)
+                plt.ylim(-0.05, 0.05)
+            elif noise == 0.5:
+                plt.ylim(0.0, 1.0)
             else:
-                plt.ylim(-0.01, noise + (noise * 0.1))
+                plt.ylim(-0.01, noise + (noise * 0.2))
             # plt.title("Average loss | {} states, {} er, {} noise".format(states, er, noise))
 
             ax.get_legend().remove()
