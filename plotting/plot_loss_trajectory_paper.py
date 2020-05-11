@@ -87,8 +87,11 @@ for s, states in enumerate(states_set):
             plt.xlabel(r'Time $t$')
             plt.ylabel("Average Error")
             plt.ylim(-0.01, 0.525)
-            plt.xlim(0, 1400)
-            # plt.xlim(0, 5000)
+            if conn == 1.0:
+                plt.xlim(0, 1500)
+                # plt.xlim(0, 10000)
+            elif conn == 0.0:
+                plt.xlim(0, 10000)
             # plt.title("Average loss | {} states, {} er, {} noise".format(states, er, noise))
 
             ax.get_legend().remove()
@@ -103,5 +106,10 @@ for s, states in enumerate(states_set):
             # time.sleep(10)
 
             plt.tight_layout()
-            plt.savefig("../../results/graphs/sotw-network/loss_trajectory_{}_states_{}_agents_{:.2f}_noise.pdf".format(states, agents, noise))
+            # Complete graph
+            if conn == 1.0:
+                plt.savefig("../../results/graphs/sotw-network/loss_trajectory_{}_states_{}_agents_{:.2f}_noise.pdf".format(states, agents, noise))
+            # Evidence-only graph
+            elif conn == 0.0:
+                plt.savefig("../../results/graphs/sotw-network/loss_trajectory_ev_only_{}_states_{}_agents_{:.2f}_noise.pdf".format(states, agents, noise))
             plt.clf()
