@@ -13,8 +13,7 @@ agents_set = [10, 50, 100]
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
 evidence_strings = ["{:.2f}".format(x) for x in evidence_rates]
 noise_values = [0/100, 5/100, 10/100, 20/100, 30/100, 40/100, 50/100]
-graph_types = ["Star", "Ring", "Line"]
-# , "Caveman", "Constar"
+graph_types = ["Star", "Ring", "Line", "Caveman", "Constar"]
 
 result_directory = "../../results/test_results/sotw-network/"
 
@@ -49,6 +48,7 @@ for g, graph in enumerate(graph_types):
 
                     except FileNotFoundError:
                         print("MISSING: " + file_name)
+                        continue
 
                     for i, tests in enumerate(data):
                         sorted_data = sorted([x[0] for x in tests])
