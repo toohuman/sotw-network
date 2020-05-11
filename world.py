@@ -29,8 +29,8 @@ trajectory_populations = [10, 50, 100]
 # graph_type = "Star"       # Star (hub-and-spoke) topology
 # graph_type = "Ring"       # Ring topology
 # graph_type = "Line"       # Line topology
-graph_type = "Caveman"      # Caveman topology
-# graph_type = "Constar"      # Connected mini-stars topology
+# graph_type = "Caveman"      # Caveman topology
+graph_type = "Constar"      # Connected mini-stars topology
 
 mode = "symmetric" # ["symmetric" | "asymmetric"]
 evidence_only = False
@@ -40,11 +40,12 @@ demo_mode = False
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
 evidence_rate = None
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
-noise_value = None
+noise_value = 0.5
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
-connectivity_value = 1.0
+connectivity_value = None
 knn_values = [2, 4, 6, 8, 10, 20, 50]
 k_nearest_neighbours = None
+clique_size = None
 
 # Set the initialisation function for agent beliefs - option to add additional
 # initialisation functions later.
@@ -115,12 +116,12 @@ def initialisation(
         elif graph_type == "Caveman":
             # We place small complete graphs around a ring where each complete graph is
             # connected to the ring via a single node.
-            cave_size = 5
-            if num_of_agents % cave_size != 0:
-                sys.exit("Number of agents is not divisible by {}: required for Caveman network.".format(cave_size))
+            clique_size = 10
+            if num_of_agents % clique_size != 0:
+                sys.exit("Number of agents is not divisible by {}: required for Caveman network.".format(clique_size))
             agent_indices = [x for x in range(num_of_agents)]
             random_instance.shuffle(agent_indices)
-            hubs = [agent_indices.pop() for x in range(int(num_of_agents / cave_size))]
+            hubs = [agent_indices.pop() for x in range(int(num_of_agents / clique_size))]
             # First, connect the hubs together in a ring.
             edges += [(hubs[x], hubs[x + 1]) for x in range(len(hubs) - 1)]
             edges += [(hubs[-1], hubs[0])]
@@ -133,12 +134,12 @@ def initialisation(
         elif graph_type == "Constar":
             # We place star networks around a ring where each star is
             # connected to the ring via the central hub.
-            star_size = 5
-            if num_of_agents % star_size != 0:
-                sys.exit("Number of agents is not divisible by {}: required for Connected Star network.".format(star_size))
+            clique_size = 10
+            if num_of_agents % clique_size != 0:
+                sys.exit("Number of agents is not divisible by {}: required for Connected Star network.".format(clique_size))
             agent_indices = [x for x in range(num_of_agents)]
             random_instance.shuffle(agent_indices)
-            hubs = [agent_indices.pop() for x in range(int(num_of_agents / star_size))]
+            hubs = [agent_indices.pop() for x in range(int(num_of_agents / clique_size))]
             # First, connect the hubs together in a ring.
             edges += [(hubs[x], hubs[x + 1]) for x in range(len(hubs) - 1)]
             edges += [(hubs[-1], hubs[0])]
@@ -405,6 +406,9 @@ def main():
             file_name_params.append("{:.2f}con".format(arguments.connectivity))
     elif graph_type in ["Star", "Ring", "Line", "Caveman", "Constar"]:
         file_name_params.append("{}".format(graph_type))
+        if graph_type in ["Caveman", "Constar"]:
+            file_name_params.append("{}".format(clique_size))
+
 
     file_name_params.append("{:.2f}er".format(evidence_rate))
     if noise_value is not None:
