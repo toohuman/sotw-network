@@ -17,6 +17,7 @@ from sotw.agents.agent import Agent
 from utilities import operators
 from utilities import beliefs
 from utilities import results
+from utilities import topologies
 
 tests = 100
 iteration_limit = 10_000
@@ -24,13 +25,16 @@ steady_state_threshold = 100
 trajectory_populations = [10, 50, 100]
 
 # Set the graph type
-# graph_type = "ER"         # Erdos-Reyni: random
-# graph_type = "WS"         # Watts-Strogatz: small-world
-# graph_type = "Star"       # Star (hub-and-spoke) topology
-# graph_type = "Ring"       # Ring topology
-# graph_type = "Line"       # Line topology
-# graph_type = "Caveman"      # Caveman topology
-graph_type = "Constar"      # Connected mini-stars topology
+
+# Erdos-Reyni: random | Watts-Strogatz: small-world.
+random_graphs = ["ER", "WS"]
+# What we are calling "pathological" cases.
+patho_graphs = ["line", "ring", "star"]
+clique_graphs = [
+    "connected_star", "complete_star",
+    "caveman", "complete_caveman"
+]
+graph_type = "complete_caveman"
 
 mode = "symmetric" # ["symmetric" | "asymmetric"]
 evidence_only = False
@@ -45,7 +49,7 @@ connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
 connectivity_value = None
 knn_values = [2, 4, 6, 8, 10, 20, 50]
 k_nearest_neighbours = None
-clique_size = None
+clique_size = 10
 
 # Set the initialisation function for agent beliefs - option to add additional
 # initialisation functions later.
@@ -62,6 +66,8 @@ def initialisation(
     print(steady_state_results)runs before any other part of the code. Starting with
     the creation of agents and the initialisation of relevant variables.
     """
+
+    topology = topologies.Topologies()
 
     identity = 0
     agents = list()
@@ -100,54 +106,16 @@ def initialisation(
 
         # Produce a random graph (Erdos-Renyi) with a connectivity parameter p
         if graph_type == "ER":
-            edges  += nx.gnp_random_graph(len(agents), connectivity, random_instance).edges
+            edges += nx.gnp_random_graph(len(agents), connectivity, random_instance).edges
         # Produce a random small-world graph (Watts-Strogatz) with k nearest neighbours
         # and a connectivity parameter p
         elif graph_type == "WS":
-            edges  += nx.watts_strogatz_graph(len(agents), knn, connectivity, random_instance).edges
-        elif graph_type == "Star":
-            hub = random_instance.choice(range(len(agents)))
-            edges += [(hub, x) for x in range(len(agents)) if x != hub]
-        elif graph_type == "Ring":
-            edges += [(x, x + 1) for x in range(len(agents) - 1)]
-            edges += [(len(agents) - 1, 0)]
-        elif graph_type == "Line":
-            edges += [(x, x + 1) for x in range(len(agents) - 1)]
-        elif graph_type == "Caveman":
-            # We place small complete graphs around a ring where each complete graph is
-            # connected to the ring via a single node.
-            clique_size = 10
-            if num_of_agents % clique_size != 0:
-                sys.exit("Number of agents is not divisible by {}: required for Caveman network.".format(clique_size))
-            agent_indices = [x for x in range(num_of_agents)]
-            random_instance.shuffle(agent_indices)
-            hubs = [agent_indices.pop() for x in range(int(num_of_agents / clique_size))]
-            # First, connect the hubs together in a ring.
-            edges += [(hubs[x], hubs[x + 1]) for x in range(len(hubs) - 1)]
-            edges += [(hubs[-1], hubs[0])]
-            # Then, create the complete graphs attached to each hub node.
-            pick = int(len(agent_indices) / len(hubs))
-            for hub in hubs:
-                chosen_nodes = [hub]
-                chosen_nodes += [agent_indices.pop() for x in range(pick)]
-                edges += [(x, y) for i, x in enumerate(chosen_nodes[:-1]) for y in chosen_nodes[i+1:]]
-        elif graph_type == "Constar":
-            # We place star networks around a ring where each star is
-            # connected to the ring via the central hub.
-            clique_size = 10
-            if num_of_agents % clique_size != 0:
-                sys.exit("Number of agents is not divisible by {}: required for Connected Star network.".format(clique_size))
-            agent_indices = [x for x in range(num_of_agents)]
-            random_instance.shuffle(agent_indices)
-            hubs = [agent_indices.pop() for x in range(int(num_of_agents / clique_size))]
-            # First, connect the hubs together in a ring.
-            edges += [(hubs[x], hubs[x + 1]) for x in range(len(hubs) - 1)]
-            edges += [(hubs[-1], hubs[0])]
-            # Then, create the star graphs attached to each hub node.
-            pick = int(len(agent_indices) / len(hubs))
-            for hub in hubs:
-                chosen_nodes = [agent_indices.pop() for x in range(pick)]
-                edges += [(hub, x) for x in chosen_nodes if x != hub]
+            edges += nx.watts_strogatz_graph(len(agents), knn, connectivity, random_instance).edges
+        else:
+            try:
+                edges += getattr(topology, graph_type)(len(agents), clique_size, random_instance)
+            except AttributeError:
+                sys.exit("Topology does not match a corresponding topology generator function.")
 
     # For Python 3.6+, dictionaries maintain a consistent order, so node/agent order
     # should be maintained.
@@ -263,7 +231,7 @@ def main():
         if arguments.knn > arguments.agents:
             return
 
-    if arguments.hubs == 0 and arguments.connectivity is None and graph_type in ["ER", "WS"]:
+    if arguments.hubs == 0 and arguments.connectivity is None and graph_type in random_graphs:
         print("Usage error: Connectivity must be specified for node-only graph.")
         sys.exit(0)
 
@@ -404,11 +372,10 @@ def main():
         if arguments.connectivity is not None and arguments.knn is not None:
             file_name_params.append("{}k".format(arguments.knn))
             file_name_params.append("{:.2f}con".format(arguments.connectivity))
-    elif graph_type in ["Star", "Ring", "Line", "Caveman", "Constar"]:
+    elif graph_type in patho_graphs + clique_graphs:
         file_name_params.append("{}".format(graph_type))
-        if graph_type in ["Caveman", "Constar"]:
+        if graph_type in clique_graphs:
             file_name_params.append("{}".format(clique_size))
-
 
     file_name_params.append("{:.2f}er".format(evidence_rate))
     if noise_value is not None:
