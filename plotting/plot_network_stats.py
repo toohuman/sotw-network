@@ -6,7 +6,7 @@ import pickle
 import seaborn as sns; sns.set(font_scale=1.3)
 
 states_set = [100]
-agents_set = list(range(10, 101, 10))
+agents_set = [10, 50, 100]
 graph_types = ["ER", "WS", "Complete", "Star", "Ring", "Line"]
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
 knn_values = [2, 4, 6, 8, 10, 20, 50]
@@ -16,7 +16,7 @@ result_directory = "../../results/test_results/sotw-network/"
 
 for g, graph_type in enumerate(graph_types):
 
-    network_stats = []
+    network_stats = [[] for x in agents_set]
 
     for a, agents in enumerate(agents_set):
 
@@ -63,93 +63,25 @@ for g, graph_type in enumerate(graph_types):
             if graph_type == "Complete":
                 break
 
-    if graph_type not in ["ER", "WS"]:
+    if graph_type in ["ER", "WS"]:
 
         file_name = "network_stats_{}.pdf".format(graph_type)
-        sns.set_palette("rocket", 2)
+        sns.set_palette("rocket", len(agents_set)*2)
 
+        print()
         print(network_stats[0])
 
-        results = [[network_stats[i][j][0] for i in range(len(agents_set))] for j in range(2)]
-        std_dev = [[network_stats[i][j][1] for i in range(len(agents_set))] for j in range(2)]
+        results = [[network_stats[a][i][0] for a in range(len(agents_set))] for i in range(2)]
+        std_dev = [[network_stats[a][i][1] for a in range(len(agents_set))] for i in range(2)]
         print(results)
         print(std_dev)
         print(graph_type)
 
-        for i in range(2):
-            ax = sns.lineplot(agents_set, results[i], linewidth = 2, label=line_labels[i])
-            plt.fill_between(agents_set, np.subtract(results[i], std_dev[i]), np.add(results[i], std_dev[i]), alpha=.3)
-        plt.xlabel("Agents")
-        plt.ylabel("")
-
-        # ax.get_legend().remove()
-
-        # import pylab
-        # fig_legend = pylab.figure(figsize=(1,2))
-        # pylab.figlegend(*ax.get_legend_handles_labels(), loc="upper left", ncol=len(knn_strings))
-        # fig_legend.show()
-        # plt.show()
-
-        # import time
-        # time.sleep(10)
-
-        plt.tight_layout()
-        plt.show()
-        # plt.savefig("../../results/graphs/sotw-network/loss_WS_{}_states_{}_agents_{:.2f}_er_{:.2f}_noise.pdf".format(states, agents, er, noise))
-        plt.clf()
-
-    elif:
-
-        file_name = "network_stats_{}.pdf".format(graph_type)
-        sns.set_palette("rocket", 2)
-
-        print(network_stats[0])
-
-        results = [[network_stats[i][j][0] for i in range(len(agents_set))] for j in range(2)]
-        std_dev = [[network_stats[i][j][1] for i in range(len(agents_set))] for j in range(2)]
-        print(results)
-        print(std_dev)
-        print(graph_type)
-
-        for i in range(2):
-            ax = sns.lineplot(agents_set, results[i], linewidth = 2, label=line_labels[i])
-            plt.fill_between(agents_set, np.subtract(results[i], std_dev[i]), np.add(results[i], std_dev[i]), alpha=.3)
-        plt.xlabel("Agents")
-        plt.ylabel("")
-
-        # ax.get_legend().remove()
-
-        # import pylab
-        # fig_legend = pylab.figure(figsize=(1,2))
-        # pylab.figlegend(*ax.get_legend_handles_labels(), loc="upper left", ncol=len(knn_strings))
-        # fig_legend.show()
-        # plt.show()
-
-        # import time
-        # time.sleep(10)
-
-        plt.tight_layout()
-        plt.show()
-        # plt.savefig("../../results/graphs/sotw-network/loss_WS_{}_states_{}_agents_{:.2f}_er_{:.2f}_noise.pdf".format(states, agents, er, noise))
-        plt.clf()
-
-    else:
-
-        file_name = "network_stats_{}.pdf".format(graph_type)
-        sns.set_palette("rocket", 2)
-
-        print(network_stats[0])
-
-        results = [[network_stats[i][j][0] for i in range(len(agents_set))] for j in range(2)]
-        std_dev = [[network_stats[i][j][1] for i in range(len(agents_set))] for j in range(2)]
-        print(results)
-        print(std_dev)
-        print(graph_type)
-
-        for i in range(2):
-            ax = sns.lineplot(agents_set, results[i], linewidth = 2, label=line_labels[i])
-            plt.fill_between(agents_set, np.subtract(results[i], std_dev[i]), np.add(results[i], std_dev[i]), alpha=.3)
-        plt.xlabel("Agents")
+        for a, agents in enumerate(agents_set):
+            for i in range(2):
+                ax = sns.lineplot(connectivity_values, results[a][i], linewidth = 2, label=line_labels[i])
+                plt.fill_between(connectivity_values, np.subtract(results[a][i], std_dev[a][i]), np.add(results[a][i], std_dev[a][i]), alpha=.2)
+        plt.xlabel("Connectivity")
         plt.ylabel("")
 
         # ax.get_legend().remove()
