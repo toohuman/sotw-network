@@ -8,12 +8,17 @@ import seaborn as sns; sns.set(font_scale=1.3)
 PERC_LOWER = 10
 PERC_UPPER = 90
 
-agents_set = [10, 50, 100]
 states_set = [100]
+agents_set = [10, 50, 100]
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
 evidence_strings = ["{:.2f}".format(x) for x in evidence_rates]
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
-graph_types = ["Star", "Ring", "Line", "Caveman", "Constar"]
+graph_types = [
+    "Ring", "Line", "Star",
+    "Star", "Constar_10", "complete_star_10",
+    "Caveman_10", "complete_caveman_10"
+]
+
 
 result_directory = "../../results/test_results/sotw-network/"
 
@@ -89,7 +94,7 @@ for a, agents in enumerate(agents_set):
             # plt.show()
             plt.tight_layout()
 
-            plt.savefig("../../results/graphs/sotw-network/hm_loss_{}_{}_states_{}_agents_noise_er.pdf".format(graph, states, agents), bbox_inches="tight")
+            plt.savefig("../../results/graphs/sotw-network/hm_loss_{}_{}_states_{}_agents_noise_er.pdf".format(graph.lower(), states, agents), bbox_inches="tight")
 
             # ax.remove()
             # plt.show()

@@ -13,7 +13,11 @@ agents_set = [10, 50, 100]
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
 evidence_strings = ["{:.2f}".format(x) for x in evidence_rates]
 noise_values = [0/100, 5/100, 10/100, 20/100, 30/100, 40/100, 50/100]
-graph_types = ["Star", "Ring", "Line", "Caveman", "Constar"]
+graph_types = [
+     "Line", "Ring", "Star",
+    "Star", "Constar_5", "Constar_10", "complete_star_10",
+    "Caveman_5", "Caveman_10", "complete_caveman_10"
+]
 
 result_directory = "../../results/test_results/sotw-network/"
 
@@ -74,7 +78,7 @@ for g, graph in enumerate(graph_types):
 
                 max_iteration += 50 if not iterations_maxed else int(len(iterations)/2)
 
-                print("{} || {} states | {} agents | {:.2f} noise".format(graph, states, agents, noise))
+                print("{} :: {} states | {} agents | {:.2f} noise".format(graph, states, agents, noise))
                 for e, er in enumerate(evidence_rates):
                     print("   [{:.2f} er]: {} t".format(er, convergence_times[e]))
 
@@ -89,7 +93,7 @@ for g, graph in enumerate(graph_types):
                 plt.ylabel("Average Error")
                 plt.ylim(-0.01, 0.525)
                 # plt.xlim(0, 1400)
-                plt.xlim(0, 5000)
+                plt.xlim(0, 10000)
                 # plt.title("Average loss | {} states, {} er, {} noise".format(states, er, noise))
 
                 ax.get_legend().remove()
@@ -104,5 +108,5 @@ for g, graph in enumerate(graph_types):
                 # time.sleep(10)
 
                 plt.tight_layout()
-                plt.savefig("../../results/graphs/sotw-network/loss_trajectory_{}_{}_states_{}_agents_{:.2f}_noise.pdf".format(graph, states, agents, noise))
+                plt.savefig("../../results/graphs/sotw-network/loss_trajectory_{}_{}_states_{}_agents_{:.2f}_noise.pdf".format(graph.lower(), states, agents, noise))
                 plt.clf()
