@@ -14,6 +14,9 @@ knn_values = [2, 4, 6, 8, 10, 20, 50]
 
 for a, agents in enumerate(agents_set):
     for g, graph_type in enumerate(graph_types):
+        if graph_type in ["ER", "WS"] and agents not in [10, 50, 100]:
+            continue
+
         for c, conn in enumerate(connectivity_values):
             for k, knn in enumerate(knn_values):
                 if knn >= agents:
@@ -29,9 +32,7 @@ for a, agents in enumerate(agents_set):
                 file_name_params.append("{}".format(graph_type))
                 file_name_params.append("{}a".format(agents))
 
-                network = None
-
-                if graph_type == "ER" or graph_type == "WS":
+                if graph_type in ["ER", "WS"]:
                     file_name_params.append("{:.2f}con".format(conn))
                     if graph_type == "WS":
                         file_name_params.append("{}k".format(knn))
@@ -40,6 +41,9 @@ for a, agents in enumerate(agents_set):
                 cluster_coeffs = list()
 
                 for iteration in range(100):
+
+                    network = None
+
                     if graph_type == "ER":
                         network = nx.gnp_random_graph(agents, conn)
                     elif graph_type == "WS":
@@ -80,5 +84,5 @@ for a, agents in enumerate(agents_set):
 
                 if graph_type != "WS":
                     break
-            if graph_type == "Complete":
+            if graph_type not in ["ER", "WS"]:
                 break
