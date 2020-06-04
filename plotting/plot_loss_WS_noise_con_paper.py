@@ -77,7 +77,7 @@ for s, states in enumerate(states_set):
                         continue
                     ax = sns.lineplot(connectivity_values, results[k], linewidth = 2, label=knn_strings[k])
                 plt.axhline(noise, color="red", linestyle="dotted", linewidth = 2)
-                plt.xlabel(r'Rewiring probability $p$')
+                plt.xlabel(r'Rewiring probability $\rho$')
                 plt.ylabel("Average Error")
                 if noise == 0:
                     plt.ylim(-0.2, 0.2)

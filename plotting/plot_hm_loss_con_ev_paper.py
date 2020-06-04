@@ -86,7 +86,7 @@ for a, agents in enumerate(agents_set):
             # fig_legend.show()
             # plt.show()
 
-            ax.set(xlabel=r'Connectivity $p$', ylabel='Evidence rate')
+            ax.set(xlabel=r'Connectivity $\rho$', ylabel='Evidence rate')
             # plt.show()
             plt.tight_layout()
 
