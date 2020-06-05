@@ -11,11 +11,8 @@ import numpy as np
 sys.path.append("sotw")
 
 # from agents.agent import Agent
-from graph.node import Node
-from graph.hub import Hub
-from sotw.agents.agent import Agent
+from sotw.agents.agent import *
 from utilities import operators
-from utilities import beliefs
 from utilities import results
 from utilities import topologies
 
@@ -34,32 +31,32 @@ clique_graphs = [
     "connected_star", "complete_star",
     "caveman", "complete_caveman"
 ]
-graph_type = "complete_caveman"
+graph_type = "ER"
 
-mode = "symmetric" # ["symmetric" | "asymmetric"]
 evidence_only = False
-# demo_mode should be used to visualise performance live during simulation run
-demo_mode = False
 
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
 evidence_rate = None
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
-noise_value = 0.5
+noise_value = 0.0
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
-connectivity_value = None
+connectivity_value = 1.0
 knn_values = [2, 4, 6, 8, 10, 20, 50]
 k_nearest_neighbours = None
 clique_size = 10
 
+# Set the type of agent: three-valued, voter or probabilistic
+# (Three-valued) Agent | VoterAgent | ProbabilisticAgent
+agent_type = Agent
 # Set the initialisation function for agent beliefs - option to add additional
 # initialisation functions later.
-init_beliefs = beliefs.ignorant_belief
+init_beliefs = agent_type.ignorant_belief
 
 # TODO:
 # 1. Remove separate agents(nodes) and edges lists, using only networkx instead.
 
 def initialisation(
-    num_of_agents, num_of_hubs, states, network, connectivity, knn, random_instance
+    num_of_agents, states, network, connectivity, knn, random_instance
 ):
     """
     This initialisation function
@@ -73,49 +70,23 @@ def initialisation(
     agents = list()
     edges = list()
 
-    # If there should be a separation of hubs from nodes, then use the standard implementation
-    # until an alternative networkx implementation has been written.
-    if num_of_hubs > 0:
-
-        # Add the "node" agents to the list of agents first.
-        agents += [Node(init_beliefs(states)) for x in range(num_of_agents * num_of_hubs)]
-        # Then add the "hub" agents.
-        agents += [Hub(init_beliefs(states)) for x in range(num_of_hubs)]
-        # Set agent's identity.
-        for a in range(len(agents)):
-            agents[a].set_identity = identity
-            identity += 1
-
-        # Finally, generate a list of edges in which each hub is connected to all of its
-        # respective nodes and each hub is also connected to every other hub.
-        edges += [
-            ((num_of_hubs * num_of_agents) + i, (i * num_of_agents) + j)\
-            for i in range(num_of_hubs)\
-            for j in range(num_of_agents)
-        ]
-        edges += [
-            ((num_of_hubs * num_of_agents) + i, (num_of_hubs * num_of_agents) + j)\
-            for i in range(num_of_hubs)\
-            for j in range(i + 1, num_of_hubs)
-        ]
-
-        # A complete graph using networkx:
-        # network = nx.complete_graph(agents)
-    else:
+    if isinstance(agent_type, Agent) or isinstance(agent_type, ProbabilisticAgent):
         agents += [Agent(init_beliefs(states)) for x in range(num_of_agents)]
+    if isinstance(agent_type, VoterAgent):
+        agents += [Agent(init_beliefs(states, random_instance)) for x in range(num_of_agents)]
 
-        # Produce a random graph (Erdos-Renyi) with a connectivity parameter p
-        if graph_type == "ER":
-            edges += nx.gnp_random_graph(len(agents), connectivity, random_instance).edges
-        # Produce a random small-world graph (Watts-Strogatz) with k nearest neighbours
-        # and a connectivity parameter p
-        elif graph_type == "WS":
-            edges += nx.watts_strogatz_graph(len(agents), knn, connectivity, random_instance).edges
-        else:
-            try:
-                edges += getattr(topology, graph_type)(len(agents), clique_size, random_instance)
-            except AttributeError:
-                sys.exit("Topology does not match a corresponding topology generator function.")
+    # Produce a random graph (Erdos-Renyi) with a connectivity parameter p
+    if graph_type == "ER":
+        edges += nx.gnp_random_graph(len(agents), connectivity, random_instance).edges
+    # Produce a random small-world graph (Watts-Strogatz) with k nearest neighbours
+    # and a connectivity parameter p
+    elif graph_type == "WS":
+        edges += nx.watts_strogatz_graph(len(agents), knn, connectivity, random_instance).edges
+    else:
+        try:
+            edges += getattr(topology, graph_type)(len(agents), clique_size, random_instance)
+        except AttributeError:
+            sys.exit("Topology does not match a corresponding topology generator function.")
 
     # For Python 3.6+, dictionaries maintain a consistent order, so node/agent order
     # should be maintained.
@@ -125,7 +96,7 @@ def initialisation(
     return
 
 def main_loop(
-    states: int, network, true_state: [], mode: str, random_instance,
+    states: int, network, true_state: [], random_instance,
     entropy_data, error_data
 ):
     """
@@ -136,7 +107,6 @@ def main_loop(
     # Format: before, after evidence, after consensus.
     entropy_distributions = [0 for x in range(states)]
     entropy_diffs = [0 for x in range(states)]
-    prior_belief = None
 
     # For each agent, provided that the agent is to receive evidence this iteration
     # according to the current evidence rate, have the agent perform evidential
@@ -147,24 +117,20 @@ def main_loop(
         for s, state in enumerate(agent.belief):
             entropy_distributions[s] += state
 
-        # Hubs do not receive direct evidence, only updating their beliefs based on
-        # information from other nodes.
-        # if isinstance(agent, Node) and random_instance.random() <= evidence_rate:
         if random_instance.random() <= evidence_rate:
 
-            prior_belief = agent.belief
-
             # Generate a random piece of evidence, selecting from the set of unknown states.
-            evidence = beliefs.random_evidence(
-                agent.belief,
-                agent.region,
+            # evidence = agent.random_evidence(
+            #     true_state,
+            #     noise_value,
+            #     random_instance
+            # )
+
+            agent.evidential_updating(
                 true_state,
                 noise_value,
                 random_instance
             )
-            agent.evidential_updating(operators.combine(agent.belief, evidence))
-
-
 
         reached_convergence &= agent.steady_state(steady_state_threshold)
 
@@ -175,25 +141,18 @@ def main_loop(
 
     # Agents then combine at random
 
-    # Symmetric
-    if mode == "symmetric":
+    try:
+        chosen_nodes = random_instance.choice(list(network.edges()))
+    except IndexError:
+        return True
 
-        try:
-            chosen_nodes = random_instance.choice(list(network.edges()))
-        except IndexError:
-            return True
+    agent1, agent2 = chosen_nodes[0], chosen_nodes[1]
 
-        agent1, agent2 = chosen_nodes[0], chosen_nodes[1]
+    new_belief = agent_type.consensus(agent1.belief, agent2.belief)
 
-        new_belief = operators.combine(agent1.belief, agent2.belief)
-
-        # Symmetric, so both agents adopt the combination belief.
-        agent1.update_belief(new_belief)
-        agent2.update_belief(new_belief)
-
-    # Asymmetric
-    # if mode == "asymmetric":
-    #   ...
+    # Symmetric, so both agents adopt the combination belief.
+    agent1.update_belief(new_belief)
+    agent2.update_belief(new_belief)
 
     return True
 
@@ -212,12 +171,7 @@ def main():
         in a multi-agent environment in which agents must reach a consensus\
             about the true state of the world.")
     parser.add_argument("states", type=int)
-    # Nodes: Number of standard nodes (e.g., submarines).
     parser.add_argument("agents", type=int)
-    # Hubs: Number of hub nodes (e.g., ships) to allocate - the k in k-means partitioning.
-    parser.add_argument("--hubs", type=int, default=0,
-        help="Hubs are the pass-through nodes for other nodes.\
-        They do not receive direct evidence.")
     parser.add_argument("-c", "--connectivity", type=float, help="Connectivity of the random graph in [0,1],\
         e.g., probability of an edge between any two nodes.")
     parser.add_argument("-k", "--knn", type=int, help="k nearest neighbours to which each node is connected.")
@@ -231,7 +185,7 @@ def main():
         if arguments.knn > arguments.agents:
             return
 
-    if arguments.hubs == 0 and arguments.connectivity is None and graph_type in random_graphs:
+    if arguments.connectivity is None and graph_type in random_graphs:
         print("Usage error: Connectivity must be specified for node-only graph.")
         sys.exit(0)
 
@@ -284,7 +238,6 @@ def main():
         # total grid space.
         initialisation(
             arguments.agents,
-            arguments.hubs,
             arguments.states,
             network,
             arguments.connectivity,
@@ -317,7 +270,7 @@ def main():
             max_iteration = iteration if iteration > max_iteration else max_iteration
             # While not converged, continue to run the main loop.
             if main_loop(
-                arguments.states, network, true_state, mode, random_instance,
+                arguments.states, network, true_state, random_instance,
                 entropy_data, error_data
             ):
                 for a, agent in enumerate(network.nodes):
@@ -362,8 +315,6 @@ def main():
 
     file_name_params.append("{}s".format(arguments.states))
     file_name_params.append("{}a".format(arguments.agents))
-    if arguments.hubs != 0:
-        file_name_params.append("{}h".format(arguments.hubs))
 
     if graph_type == "ER":
         if arguments.connectivity is not None:
@@ -382,9 +333,9 @@ def main():
         file_name_params.append("{:.2f}nv".format(noise_value))
 
     # Write loss results to pickle file
-    if arguments.agents in trajectory_populations:
-        with lzma.open(directory + "loss" + '_' + '_'.join(file_name_params) + '.pkl.xz', 'wb') as file:
-            pickle.dump(loss_results, file)
+    # if arguments.agents in trajectory_populations:
+    #     with lzma.open(directory + "loss" + '_' + '_'.join(file_name_params) + '.pkl.xz', 'wb') as file:
+    #         pickle.dump(loss_results, file)
 
     # results.write_to_file(
     #     directory,
@@ -394,8 +345,8 @@ def main():
     #     tests
     # )
 
-    with lzma.open(directory + "steady_state_loss" + '_' + '_'.join(file_name_params) + '.pkl.xz', 'wb') as file:
-        pickle.dump(steady_state_results, file)
+    # with lzma.open(directory + "steady_state_loss" + '_' + '_'.join(file_name_params) + '.pkl.xz', 'wb') as file:
+    #     pickle.dump(steady_state_results, file)
 
 if __name__ == "__main__":
 
