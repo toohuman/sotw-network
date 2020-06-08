@@ -11,8 +11,7 @@ import numpy as np
 sys.path.append("sotw")
 
 # from agents.agent import Agent
-from sotw.agents.agent import *
-from utilities import operators
+from agents.agent import *
 from utilities import results
 from utilities import topologies
 
@@ -36,9 +35,9 @@ graph_type = "ER"
 evidence_only = False
 
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
-evidence_rate = None
+evidence_rate = 1.0
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
-noise_value = 0.0
+noise_value = 0.2
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
 connectivity_value = 1.0
 knn_values = [2, 4, 6, 8, 10, 20, 50]
@@ -47,7 +46,7 @@ clique_size = 10
 
 # Set the type of agent: three-valued, voter or probabilistic
 # (Three-valued) Agent | VoterAgent | ProbabilisticAgent
-agent_type = Agent
+agent_type = ProbabilisticAgent
 # Set the initialisation function for agent beliefs - option to add additional
 # initialisation functions later.
 init_beliefs = agent_type.ignorant_belief
@@ -70,10 +69,10 @@ def initialisation(
     agents = list()
     edges = list()
 
-    if isinstance(agent_type, Agent) or isinstance(agent_type, ProbabilisticAgent):
-        agents += [Agent(init_beliefs(states)) for x in range(num_of_agents)]
-    if isinstance(agent_type, VoterAgent):
-        agents += [Agent(init_beliefs(states, random_instance)) for x in range(num_of_agents)]
+    if agent_type.__name__ == "Agent" or agent_type.__name__ == "ProbabilisticAgent":
+        agents += [agent_type(init_beliefs(states)) for x in range(num_of_agents)]
+    if agent_type.__name__ == "VoterAgent":
+        agents += [agent_type(init_beliefs(states, random_instance)) for x in range(num_of_agents)]
 
     # Produce a random graph (Erdos-Renyi) with a connectivity parameter p
     if graph_type == "ER":
@@ -109,8 +108,7 @@ def main_loop(
     entropy_diffs = [0 for x in range(states)]
 
     # For each agent, provided that the agent is to receive evidence this iteration
-    # according to the current evidence rate, have the agent perform evidential
-    # updating.
+    # according to the current evidence rate, have the agent perform evidential updating.
     reached_convergence = True
     for agent in network.nodes:
         # Generate prior distribution
@@ -119,13 +117,7 @@ def main_loop(
 
         if random_instance.random() <= evidence_rate:
 
-            # Generate a random piece of evidence, selecting from the set of unknown states.
-            # evidence = agent.random_evidence(
-            #     true_state,
-            #     noise_value,
-            #     random_instance
-            # )
-
+            # Have the agent update their belief with some piece of evidence.
             agent.evidential_updating(
                 true_state,
                 noise_value,
@@ -148,7 +140,12 @@ def main_loop(
 
     agent1, agent2 = chosen_nodes[0], chosen_nodes[1]
 
-    new_belief = agent_type.consensus(agent1.belief, agent2.belief)
+    if agent_type.__name__ == "VoterAgent":
+        new_belief = agent_type.consensus(
+            agent1.belief, agent2.belief, random_instance
+        )
+    else:
+        new_belief = agent_type.consensus(agent1.belief, agent2.belief)
 
     # Symmetric, so both agents adopt the combination belief.
     agent1.update_belief(new_belief)
@@ -195,7 +192,7 @@ def main():
     random_instance.seed(128) if arguments.random == False else random_instance.seed()
 
     # Output variables
-    directory = "../results/test_results/sotw-network/"
+    directory = "../results/test_results/sotw-network-temp/{}/".format(agent_type.__name__.lower())
     file_name_params = []
 
     param_strings = list()
@@ -229,7 +226,11 @@ def main():
     for test in range(tests):
 
         # True state of the world
-        true_state = np.array([random_instance.choice([-1,1]) for x in range(arguments.states)])
+        if agent_type.__name__ == "Agent":
+            true_state = np.array([random_instance.choice([-1,1]) for x in range(arguments.states)])
+        if agent_type.__name__ == "VoterAgent" or agent_type.__name__ == "ProbabilisticAgent":
+            true_state = np.array([random_instance.choice([0,1]) for x in range(arguments.states)])
+
 
         network = nx.Graph()
 
@@ -250,7 +251,7 @@ def main():
 
         # Pre-loop results based on agent initialisation.
         for a, agent in enumerate(network.nodes):
-            loss_values[a] = results.loss(agent.belief, true_state)
+            loss_values[a] = results.loss(agent_type, agent.belief, true_state)
 
         loss_results[0][test] = [
             np.average(loss_values),
@@ -258,6 +259,9 @@ def main():
             np.min(loss_values),
             np.max(loss_values)
         ]
+
+        print()
+        print("Initial loss:", loss_results[0][test])
 
         entropy_data = [0.0 for x in range(3)]
         error_data = [0.0 for x in range(3)]
@@ -274,7 +278,7 @@ def main():
                 entropy_data, error_data
             ):
                 for a, agent in enumerate(network.nodes):
-                    loss = results.loss(agent.belief, true_state)
+                    loss = results.loss(agent_type, agent.belief, true_state)
                     loss_values[a] = loss
                     if iteration == iteration_limit:
                         steady_state_results[test][a] = loss
@@ -289,7 +293,7 @@ def main():
             # If the simulation has converged, end the test.
             else:
                 for a, agent in enumerate(network.nodes):
-                    loss = results.loss(agent.belief, true_state)
+                    loss = results.loss(agent_type, agent.belief, true_state)
                     loss_values[a] = loss
                     # loss_results[iteration][test] += loss
                     steady_state_results[test][a] = loss
@@ -307,9 +311,9 @@ def main():
                 break
 
         # Reset the static identity for the Agent class.
-        Agent.identity = 0
+        agent_type.identity = 0
 
-    print()
+        print(steady_state_results[test])
 
     # Recording of results. First, add parameters in sequence.
 
@@ -350,7 +354,7 @@ def main():
 
 if __name__ == "__main__":
 
-    test_set = "evidence"
+    test_set = "standard"
 
     # "standard" | "evidence" | "noise" | "en" | "ce" | "cen" | "kce"
 

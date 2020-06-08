@@ -3,7 +3,7 @@
 
 import numpy as np
 
-def loss(belief, true_state, normalised = True):
+def loss(agent_type, belief, true_state, normalised = True):
     """
     Named after the loss function in machine learning, this function calculates
     the sum of the differences of two matrices, scaled by 0.5 so that we count
@@ -19,7 +19,10 @@ def loss(belief, true_state, normalised = True):
     # Sum all of the inconsistencies between the true state of the world and the
     # agent's belief.
     # Divide answer by 2 as truth values are -1 (false), 0 (uncertain), 1 (true).
-    differences = np.sum(abs(np.subtract(belief, true_state)))/2.0
+    if agent_type.__name__ == "Agent":
+        differences = np.sum(abs(np.subtract(belief, true_state)))/2.0
+    else:
+        differences = np.sum(abs(np.subtract(belief, true_state)))
 
     # If normalising the result (default) then divide the sum of the differences
     # by the length of the maximum number of pairs of relations.
