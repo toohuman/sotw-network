@@ -199,7 +199,12 @@ class ProbabilisticAgent(Agent):
             for i in range(len(belief1))
         ])
 
-        return new_belief
+        invalid_belief = np.isnan(np.sum(new_belief))
+
+        if not invalid_belief:
+            return new_belief
+        else:
+            return None
 
 
     def evidential_updating(self, true_state, noise_value, random_instance):
@@ -221,14 +226,15 @@ class ProbabilisticAgent(Agent):
 
         print("New belief:", new_belief)
 
-        # Track the number of iterations.
-        if np.array_equal(self.belief, new_belief):
-            self.since_change += 1
-        else:
-            self.since_change = 0
+        if new_belief is not None:
+            # Track the number of iterations.
+            if np.array_equal(self.belief, new_belief):
+                self.since_change += 1
+            else:
+                self.since_change = 0
 
-        self.belief = new_belief
-        self.evidence += 1
+            self.belief = new_belief
+            self.evidence += 1
 
 
     @staticmethod

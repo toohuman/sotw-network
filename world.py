@@ -147,9 +147,10 @@ def main_loop(
     else:
         new_belief = agent_type.consensus(agent1.belief, agent2.belief)
 
-    # Symmetric, so both agents adopt the combination belief.
-    agent1.update_belief(new_belief)
-    agent2.update_belief(new_belief)
+    if new_belief is not None:
+        # Symmetric, so both agents adopt the combination belief.
+        agent1.update_belief(new_belief)
+        agent2.update_belief(new_belief)
 
     return True
 
