@@ -25,19 +25,19 @@ trajectory_populations = [10, 50, 100]
 # Erdos-Reyni: random | Watts-Strogatz: small-world.
 random_graphs = ["ER", "WS"]
 # What we are calling "pathological" cases.
-patho_graphs = ["line", "ring", "star"]
+specialist_graphs = ["line", "ring", "star"]
 clique_graphs = [
     "connected_star", "complete_star",
     "caveman", "complete_caveman"
 ]
-graph_type = "ER"
+graph_type = "caveman"
 
 evidence_only = False
 
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
-evidence_rate = 1.0
+evidence_rate = None
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
-noise_value = 0.2
+noise_value = 0.5
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
 connectivity_value = 1.0
 knn_values = [2, 4, 6, 8, 10, 20, 50]
@@ -204,7 +204,7 @@ def main():
         param_strings += ["k: {}".format(arguments.knn)]
     param_strings += ["Evidence rate: {}".format(evidence_rate)]
     param_strings += ["Noise value: {}".format(noise_value)]
-    print("\t".join(param_strings))
+    print("    ".join(param_strings))
 
     # Structure is [mean, std_dev, min, max]
     loss_results = np.array([
@@ -261,9 +261,6 @@ def main():
             np.max(loss_values)
         ]
 
-        print()
-        print("Initial loss:", loss_results[0][test])
-
         entropy_data = [0.0 for x in range(3)]
         error_data = [0.0 for x in range(3)]
 
@@ -314,7 +311,7 @@ def main():
         # Reset the static identity for the Agent class.
         agent_type.identity = 0
 
-        print(steady_state_results[test])
+        # print(steady_state_results[test])
 
     # Recording of results. First, add parameters in sequence.
 
@@ -328,7 +325,7 @@ def main():
         if arguments.connectivity is not None and arguments.knn is not None:
             file_name_params.append("{}k".format(arguments.knn))
             file_name_params.append("{:.2f}con".format(arguments.connectivity))
-    elif graph_type in patho_graphs + clique_graphs:
+    elif graph_type in specialist_graphs + clique_graphs:
         file_name_params.append("{}".format(graph_type))
         if graph_type in clique_graphs:
             file_name_params.append("{}".format(clique_size))
@@ -338,9 +335,9 @@ def main():
         file_name_params.append("{:.2f}nv".format(noise_value))
 
     # Write loss results to pickle file
-    # if arguments.agents in trajectory_populations:
-    #     with lzma.open(directory + "loss" + '_' + '_'.join(file_name_params) + '.pkl.xz', 'wb') as file:
-    #         pickle.dump(loss_results, file)
+    if arguments.agents in trajectory_populations:
+        with lzma.open(directory + "loss" + '_' + '_'.join(file_name_params) + '.pkl.xz', 'wb') as file:
+            pickle.dump(loss_results, file)
 
     # results.write_to_file(
     #     directory,
@@ -350,12 +347,12 @@ def main():
     #     tests
     # )
 
-    # with lzma.open(directory + "steady_state_loss" + '_' + '_'.join(file_name_params) + '.pkl.xz', 'wb') as file:
-    #     pickle.dump(steady_state_results, file)
+    with lzma.open(directory + "steady_state_loss" + '_' + '_'.join(file_name_params) + '.pkl.xz', 'wb') as file:
+        pickle.dump(steady_state_results, file)
 
 if __name__ == "__main__":
 
-    test_set = "standard"
+    test_set = "evidence"
 
     # "standard" | "evidence" | "noise" | "en" | "ce" | "cen" | "kce"
 
