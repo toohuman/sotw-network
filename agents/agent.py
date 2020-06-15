@@ -118,7 +118,7 @@ class VoterAgent(Agent):
         # Combine the belief matrices by flipping a coin for any states on
         # which the two beliefs disagree, and adopting the rest.
         new_belief = np.array([
-            belief1[i] if belief1[i] & belief2[i] else random_instance.randint(0,2)
+            belief1[i] if belief1[i] & belief2[i] else random_instance.randint(0,1)
             for i in range(len(belief1))
         ])
 
@@ -137,8 +137,13 @@ class VoterAgent(Agent):
             random_instance
         )
 
+        # print()
+        # print("Current belief:", self.belief)
+        # print("Evidence:", evidence)
+
         new_belief = self.belief
         new_belief[evidence[0]] = evidence[1]
+        # print("New belief:", new_belief)
 
         # Track the number of iterations that the agent's belief has
         # remained unchanged.
@@ -147,7 +152,7 @@ class VoterAgent(Agent):
         else:
             self.since_change = 0
 
-        self.belief = belief
+        self.belief = new_belief
         self.evidence += 1
 
 
@@ -155,16 +160,16 @@ class VoterAgent(Agent):
     def ignorant_belief(states, random_instance):
         """ Returns a belief of total ignorance/complete uncertainty. """
 
-        return np.random.randint(2, size=states)
+        return np.array([random_instance.randint(0,1) for x in range(states)])
 
 
     def random_evidence(self, true_state, noise_value, random_instance):
         """
-        Generate a random piece of evidence from the set of states about
-        which the agent is uncertain.
+        Select a random state and provide a piece of evidence subject to
+        some noise_value.
         """
 
-        choice = random_instance.randint(len(true_state))
+        choice = random_instance.randrange(len(true_state))
 
         evidence = (
             choice,
@@ -254,10 +259,16 @@ class ProbabilisticAgent(Agent):
 
             # Binary noise model: either state is True or False
             # evidence[choice] = true_state[choice] if random_instance.random() > noise_value else 1.0 - true_state[choice]
+
             # Probabilistic noise model: assumes multiple samples are taken
             # and epsilon is the expected value.
-            evidence[choice] = abs(true_state[choice] - noise_value)\
+            # evidence[choice] = abs(true_state[choice] - noise_value)\
+            #     if random_instance.random() > noise_value\
+            #     else 1.0 - abs(true_state[choice] - noise_value)
+            alpha = 0.1
+            evidence[choice] = abs(true_state[choice] - alpha)\
                 if random_instance.random() > noise_value\
-                else 1.0 - abs(true_state[choice] - noise_value)
+                else 1.0 - abs(true_state[choice] - alpha)
+
 
         return evidence
