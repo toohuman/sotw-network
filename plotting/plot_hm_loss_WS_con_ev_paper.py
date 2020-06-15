@@ -80,8 +80,6 @@ for a, agents in enumerate(agents_set):
                     # fmt=".2f",
                     square=True
                 )
-                # legend = plt.figure()
-                # fig_ax =
 
                 # plt.title("Average loss | {} states, {} agents, {} noise".format(agents, states, noise))
                 ax.set(xlabel=r'Rewiring probability $p$', ylabel='Evidence rate')

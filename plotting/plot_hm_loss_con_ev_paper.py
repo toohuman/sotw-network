@@ -60,13 +60,15 @@ for a, agents in enumerate(agents_set):
                 continue
 
             print(heatmap_results)
-            # cmap = sns.cm.rocket_r
-            cmap = sns.cubehelix_palette(10, start=0.5, rot=-.75)
+            cmap = sns.cm.rocket_r
+            # cmap = sns.cubehelix_palette(10, start=0.5, rot=-.75)
+            # cmap = sns.light_palette("burnt siena", 10, input="xkcd")
+            # cmap = sns.color_palette("rocket_r", 10)
             ax = sns.heatmap(
                 heatmap_results,
                 # center=0,
                 cmap=cmap,
-                cbar=False,
+                cbar=True,
                 cbar_kws={"shrink": .75, "orientation": "horizontal"},
                 xticklabels=connectivity_strings,
                 yticklabels=list(reversed(evidence_strings)),
@@ -80,20 +82,13 @@ for a, agents in enumerate(agents_set):
 
             # plt.title("Average loss | {} states, {} agents, {} noise".format(agents, states, noise))
 
-            # import pylab
-            # fig_legend = pylab.figure(figsize=(1,2))
-            # pylab.figlegend(*ax.get_legend_handles_labels(), loc="upper left")
-            # fig_legend.show()
-            # plt.show()
-
             ax.set(xlabel=r'Connectivity $\rho$', ylabel='Evidence rate')
-            # plt.show()
             plt.tight_layout()
 
             plt.savefig("../../results/graphs/sotw-network/hm_loss_{}_states_{}_agents_{:.2f}_noise_er_con.pdf".format(states, agents, noise), bbox_inches="tight")
 
             # ax.remove()
-            # plt.show()
+            # plt.savefig('hm_colour_bar.pdf',bbox_inches='tight')
             # import time
             # time.sleep(10)
 
