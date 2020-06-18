@@ -15,12 +15,13 @@ evidence_strings = ["{:.2f}".format(x) for x in evidence_rates]
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
 graph_types = [
     "ring", "line", "star",
-    "star", "connected_star_10", "complete_star_10",
+    "constar_10", "complete_star_10",
     "caveman_10", "complete_caveman_10"
 ]
 
+agent_type = "agent"
 
-result_directory = "../../results/test_results/sotw-network-temp/probabilisticagent/"
+result_directory = "../../results/test_results/sotw-network-temp/{}/".format(agent_type)
 
 for a, agents in enumerate(agents_set):
     for s, states in enumerate(states_set):
@@ -64,8 +65,8 @@ for a, agents in enumerate(agents_set):
                 continue
 
             print(heatmap_results)
-            # cmap = sns.cm.rocket_r
-            cmap = sns.cubehelix_palette(10, start=0.5, rot=-.75)
+            cmap = sns.cm.rocket_r
+            # cmap = sns.cubehelix_palette(10, start=0.5, rot=-.75)
             ax = sns.heatmap(
                 heatmap_results,
                 # center=0,
@@ -94,7 +95,7 @@ for a, agents in enumerate(agents_set):
             # plt.show()
             plt.tight_layout()
 
-            plt.savefig("{}hm_loss_{}_{}_states_{}_agents_noise_er.pdf".format(result_directory, graph.lower(), states, agents), bbox_inches="tight")
+            plt.savefig("../../results/graphs/sotw-network-temp/{}/hm_loss_{}_{}_states_{}_agents_noise_er.pdf".format(agent_type, graph.lower(), states, agents), bbox_inches="tight")
 
             # ax.remove()
             # plt.show()

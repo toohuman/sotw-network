@@ -9,14 +9,16 @@ PERC_LOWER = 10
 PERC_UPPER = 90
 
 states_set = [100]
-agents_set = [100]
+agents_set = [10, 100]
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
 evidence_strings = ["{:.2f}".format(x) for x in evidence_rates]
 noise_values = [0/100, 5/100, 10/100, 20/100, 30/100, 40/100, 50/100]
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
 connectivity_strings = ["{:.2f}".format(x) for x in connectivity_values]
 
-result_directory = "../../results/test_results/sotw-network-temp/probabilisticagent/"
+agent_type = "agent"
+
+result_directory = "../../results/test_results/sotw-network-temp/{}/".format(agent_type)
 
 iterations = [x for x in range(10001)]
 conn = 1.0
@@ -54,6 +56,9 @@ for s, states in enumerate(states_set):
                     lowers[e][i] = sorted_data[PERC_LOWER - 1]
                     uppers[e][i] = sorted_data[PERC_UPPER - 1]
                     results[e][i] = np.average([x[0] for x in tests])
+
+            if data is None:
+                continue
 
             # print(results)
             convergence_times = [0 for x in evidence_rates]
@@ -109,8 +114,8 @@ for s, states in enumerate(states_set):
             plt.tight_layout()
             # Complete graph
             if conn == 1.0:
-                plt.savefig("{}loss_trajectory_{}_states_{}_agents_{:.2f}_noise.pdf".format(result_directory, states, agents, noise))
+                plt.savefig("../../results/graphs/sotw-network-temp/{}/loss_trajectory_{}_states_{}_agents_{:.2f}_noise.pdf".format(agent_type, states, agents, noise))
             # Evidence-only graph
             elif conn == 0.0:
-                plt.savefig("../../results/graphs/sotw-network/loss_trajectory_ev_only_{}_states_{}_agents_{:.2f}_noise.pdf".format(states, agents, noise))
+                plt.savefig("../../results/graphs/sotw-network-temp/{}loss_trajectory_ev_only_{}_states_{}_agents_{:.2f}_noise.pdf".format(agent_type, states, agents, noise))
             plt.clf()

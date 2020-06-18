@@ -9,17 +9,19 @@ PERC_LOWER = 10
 PERC_UPPER = 90
 
 states_set = [100]
-agents_set = [10, 50, 100]
+agents_set = [10, 100]
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
 evidence_strings = ["{:.2f}".format(x) for x in evidence_rates]
 noise_values = [0/100, 5/100, 10/100, 20/100, 30/100, 40/100, 50/100]
 graph_types = [
-    "Line", "Ring", "Star",
-    "Constar_5", "Constar_10", "complete_star_10",
-    "Caveman_5", "Caveman_10", "complete_caveman_10"
+    "line", "star",
+    "constar_10", "complete_star_10",
+    "caveman_10", "complete_caveman_10"
 ]
 
-result_directory = "../../results/test_results/sotw-network/"
+agent_type = "agent"
+
+result_directory = "../../results/test_results/sotw-network-temp/{}/".format(agent_type)
 
 iterations = [x for x in range(10001)]
 conn = 1.0
@@ -60,6 +62,9 @@ for g, graph in enumerate(graph_types):
                         uppers[e][i] = sorted_data[PERC_UPPER - 1]
                         results[e][i] = np.average([x[0] for x in tests])
 
+                if data is None:
+                    continue
+
                 # print(results)
                 convergence_times = [0 for x in evidence_rates]
                 max_iteration = 0
@@ -92,8 +97,8 @@ for g, graph in enumerate(graph_types):
                 plt.xlabel(r'Time $t$')
                 plt.ylabel("Average Error")
                 plt.ylim(-0.01, 0.525)
-                # plt.xlim(0, 1400)
-                plt.xlim(0, 10000)
+                plt.xlim(0, 1400)
+                # plt.xlim(0, 10000)
                 # plt.title("Average loss | {} states, {} er, {} noise".format(states, er, noise))
 
                 ax.get_legend().remove()
@@ -108,5 +113,5 @@ for g, graph in enumerate(graph_types):
                 # time.sleep(10)
 
                 plt.tight_layout()
-                plt.savefig("../../results/graphs/sotw-network/loss_trajectory_{}_{}_states_{}_agents_{:.2f}_noise.pdf".format(graph.lower(), states, agents, noise))
+                plt.savefig("../../results/graphs/sotw-network-temp/{}/loss_trajectory_{}_{}_states_{}_agents_{:.2f}_noise.pdf".format(agent_type, graph.lower(), states, agents, noise))
                 plt.clf()
