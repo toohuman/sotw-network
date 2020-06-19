@@ -25,19 +25,19 @@ trajectory_populations = [10, 50, 100]
 # Erdos-Reyni: random | Watts-Strogatz: small-world.
 random_graphs = ["ER", "WS"]
 # What we are calling "pathological" cases.
-specialist_graphs = ["line", "ring", "star"]
+specialist_graphs = ["line", "star"]
 clique_graphs = [
     "connected_star", "complete_star",
     "caveman", "complete_caveman"
 ]
-graph_type = "caveman"
+graph_type = "connected_star"
 
 evidence_only = False
 
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
-evidence_rate = None
+evidence_rate = 1.0
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
-noise_value = 0.5
+noise_value = 0.0
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
 connectivity_value = 1.0
 knn_values = [2, 4, 6, 8, 10, 20, 50]
@@ -45,8 +45,8 @@ k_nearest_neighbours = None
 clique_size = 10
 
 # Set the type of agent: three-valued, voter or probabilistic
-# (Three-valued) Agent | VoterAgent | ProbabilisticAgent
-agent_type = ProbabilisticAgent
+# (Three-valued) Agent | VoterAgent | ProbabilisticAgent | DampenedProbabilisticAgent
+agent_type = DampenedProbabilisticAgent
 # Set the initialisation function for agent beliefs - option to add additional
 # initialisation functions later.
 init_beliefs = agent_type.ignorant_belief
@@ -69,10 +69,11 @@ def initialisation(
     agents = list()
     edges = list()
 
-    if agent_type.__name__ == "Agent" or agent_type.__name__ == "ProbabilisticAgent":
-        agents += [agent_type(init_beliefs(states)) for x in range(num_of_agents)]
     if agent_type.__name__ == "VoterAgent":
         agents += [agent_type(init_beliefs(states, random_instance)) for x in range(num_of_agents)]
+    # if agent_type.__name__ == "Agent" or agent_type.__name__ == "ProbabilisticAgent":
+    else:
+        agents += [agent_type(init_beliefs(states)) for x in range(num_of_agents)]
 
     # Produce a random graph (Erdos-Renyi) with a connectivity parameter p
     if graph_type == "ER":
@@ -229,9 +230,9 @@ def main():
         # True state of the world
         if agent_type.__name__ == "Agent":
             true_state = np.array([random_instance.choice([-1,1]) for x in range(arguments.states)])
-        if agent_type.__name__ == "VoterAgent" or agent_type.__name__ == "ProbabilisticAgent":
+        # if agent_type.__name__ == "VoterAgent" or agent_type.__name__ == "ProbabilisticAgent":
+        else:
             true_state = np.array([random_instance.choice([0,1]) for x in range(arguments.states)])
-
 
         network = nx.Graph()
 
@@ -311,8 +312,6 @@ def main():
         # Reset the static identity for the Agent class.
         agent_type.identity = 0
 
-        # print(steady_state_results[test])
-
     # Recording of results. First, add parameters in sequence.
 
     file_name_params.append("{}s".format(arguments.states))
@@ -352,9 +351,8 @@ def main():
 
 if __name__ == "__main__":
 
-    test_set = "evidence"
-
     # "standard" | "evidence" | "noise" | "en" | "ce" | "cen" | "kce"
+    test_set = "evidence"
 
     if test_set == "standard":
 
