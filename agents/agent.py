@@ -318,3 +318,46 @@ class DampenedProbabilisticAgent(ProbabilisticAgent):
         else:
             return None
 
+
+class AverageAgent(ProbabilisticAgent):
+    """
+    An agent adopting a probabilistic model of belief representations
+    and consensus formation.
+    """
+
+    def __init__(self, belief):
+        super().__init__(belief)
+
+
+    @staticmethod
+    def consensus(belief1, belief2):
+        """
+        A dampened variant of Bayesian updating.
+        In this variant, the variable lambda is used to prevent agents from
+        reaching absolute certainty.
+        """
+
+        # Combine the belief matrices by flipping a coin for any states on
+        # which the two beliefs disagree, and adopting the rest.
+        new_belief = np.array([
+            (belief1[i] + belief2[i]) / 2.0 for i in range(len(belief1))
+        ])
+
+        # print("Before:", new_belief)
+
+        # Jonathan's preferred lambda value
+        var_lambda = 0.01
+        new_belief = np.array([
+            (var_lambda * 0.5) + ((1 - var_lambda) * belief)
+            for belief in new_belief
+        ])
+
+        # print("After:", new_belief)
+
+        invalid_belief = np.isnan(np.sum(new_belief))
+
+        if not invalid_belief:
+            return new_belief
+        else:
+            return None
+
