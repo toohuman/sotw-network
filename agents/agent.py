@@ -118,7 +118,7 @@ class VoterAgent(Agent):
         # Combine the belief matrices by flipping a coin for any states on
         # which the two beliefs disagree, and adopting the rest.
         new_belief = np.array([
-            belief1[i] if belief1[i] & belief2[i] else random_instance.randint(0,1)
+            belief1[i] if belief1[i] == belief2[i] else random_instance.randint(0,1)
             for i in range(len(belief1))
         ])
 
@@ -274,7 +274,7 @@ class ProbabilisticAgent(Agent):
         return evidence
 
 
-class DampenedProbabilisticAgent(ProbabilisticAgent):
+class DampenedAgent(ProbabilisticAgent):
     """
     An agent adopting a probabilistic model of belief representations
     and consensus formation.
