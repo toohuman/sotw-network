@@ -14,7 +14,7 @@ agents_set = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
 evidence_strings = ["{:.2f}".format(x) for x in evidence_rates]
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
-connectivity_value = 0.0
+connectivity_value = 1.0
 connectivity_string = "{:.2f}".format(connectivity_value)
 
 result_directory = "../../results/test_results/sotw-network/"

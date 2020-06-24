@@ -15,11 +15,11 @@ evidence_strings = ["{:.2f}".format(x) for x in evidence_rates]
 noise_values = [0/100, 5/100, 10/100, 20/100, 30/100, 40/100, 50/100]
 graph_types = [
     "line", "star",
-    "constar_10", "complete_star_10",
+    "connected_star_10", "complete_star_10",
     "caveman_10", "complete_caveman_10"
 ]
 
-agent_type = "agent"
+agent_type = "voteragent"
 
 result_directory = "../../results/test_results/sotw-network-temp/{}/".format(agent_type)
 

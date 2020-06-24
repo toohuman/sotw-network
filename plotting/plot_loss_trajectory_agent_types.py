@@ -16,7 +16,7 @@ noise_values = [0/100, 5/100, 10/100, 20/100, 30/100, 40/100, 50/100]
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
 connectivity_strings = ["{:.2f}".format(x) for x in connectivity_values]
 
-agent_type = "agent"
+agent_type = "voteragent"
 
 result_directory = "../../results/test_results/sotw-network-temp/{}/".format(agent_type)
 
@@ -117,5 +117,5 @@ for s, states in enumerate(states_set):
                 plt.savefig("../../results/graphs/sotw-network-temp/{}/loss_trajectory_{}_states_{}_agents_{:.2f}_noise.pdf".format(agent_type, states, agents, noise))
             # Evidence-only graph
             elif conn == 0.0:
-                plt.savefig("../../results/graphs/sotw-network-temp/{}loss_trajectory_ev_only_{}_states_{}_agents_{:.2f}_noise.pdf".format(agent_type, states, agents, noise))
+                plt.savefig("../../results/graphs/sotw-network-temp/{}/loss_trajectory_ev_only_{}_states_{}_agents_{:.2f}_noise.pdf".format(agent_type, states, agents, noise))
             plt.clf()

@@ -21,7 +21,7 @@ connectivity_strings = ["{:.2f}".format(x) for x in connectivity_values]
 result_directory = "../../results/test_results/sotw-network/"
 
 for s, states in enumerate(states_set):
-    for e, er in enumerate(reversed(evidence_rates)):
+    for e, er in enumerate(evidence_rates):
         for n, noise in enumerate(noise_values):
             for a, agents in enumerate(agents_set):
 
@@ -71,7 +71,7 @@ for s, states in enumerate(states_set):
 
                 # flatui = ["#9b59b6", "#3498db", "#95a5a6", "#e74c3c", "#34495e", "#2ecc71"]
                 # sns.set_palette(sns.color_palette(flatui))
-                sns.set_palette("rocket", 8)
+                sns.set_palette("rocket", len(knn_values))
                 for k, knn in enumerate(knn_values):
                     if knn >= agents:
                         continue
@@ -85,7 +85,7 @@ for s, states in enumerate(states_set):
                     plt.ylim(-0.01, noise + (noise * 0.1))
                 # plt.title("Average loss | {} states, {} er, {} noise".format(states, er, noise))
 
-                ax.get_legend().remove()
+                # ax.get_legend().remove()
 
                 # import pylab
                 # fig_legend = pylab.figure(figsize=(1,2))
