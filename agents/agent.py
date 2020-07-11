@@ -224,18 +224,19 @@ class ProbabilisticAgent(Agent):
             random_instance
         )
 
-        new_belief = self.consensus(self.belief, evidence)
+        new_belief = self.belief
+        if evidence is not None:
+            new_belief[evidence[0]] = evidence[1]
 
-        if new_belief is not None:
-            # Track the number of iterations that the agent's belief has
-            # remained unchanged.
-            if np.array_equal(self.belief, new_belief):
-                self.since_change += 1
-            else:
-                self.since_change = 0
+        # Track the number of iterations that the agent's belief has
+        # remained unchanged.
+        if np.array_equal(self.belief, new_belief):
+            self.since_change += 1
+        else:
+            self.since_change = 0
 
-            self.belief = new_belief
-            self.evidence += 1
+        self.belief = new_belief
+        self.evidence += 1
 
 
     @staticmethod
@@ -251,26 +252,23 @@ class ProbabilisticAgent(Agent):
         which the agent is uncertain.
         """
 
-        evidence = np.full(len(self.belief), 0.5, float)
+        evidence = None
         unknowns = np.argwhere((self.belief != 0.) & (self.belief != 1.))
 
         if len(unknowns) > 0:
-            choice = random_instance.choice(unknowns)
 
-            # Binary noise model: either state is True or False
-            # evidence[choice] = true_state[choice] if random_instance.random() > noise_value else 1.0 - true_state[choice]
-
-            # Probabilistic noise model: assumes multiple samples are taken
-            # and epsilon is the expected value.
-            # evidence[choice] = abs(true_state[choice] - noise_value)\
-            #     if random_instance.random() > noise_value\
-            #     else 1.0 - abs(true_state[choice] - noise_value)
             alpha = 0.1
-            evidence[choice] = abs(true_state[choice] - alpha)\
-                if random_instance.random() > noise_value\
-                else 1.0 - abs(true_state[choice] - alpha)
+            choice = random_instance.choice(unknowns)
+            if true_state[choice] == 0:
+                alpha = (1.0 - alpha)
 
-
+            if random_instance.random() > noise_value:
+                value = ((1.0 - alpha) * self.belief[choice])\
+                    /((1.0 - alpha) * self.belief[choice] + alpha * (1.0 - self.belief[choice]))
+            else:
+                value = (alpha * self.belief[choice])\
+                    / (alpha * self.belief[choice] + (1.0 - alpha) * (1.0 - self.belief[choice]))
+            evidence = (choice, value)
         return evidence
 
 
@@ -342,17 +340,6 @@ class AverageAgent(ProbabilisticAgent):
         new_belief = np.array([
             (belief1[i] + belief2[i]) / 2.0 for i in range(len(belief1))
         ])
-
-        # print("Before:", new_belief)
-
-        # Jonathan's preferred lambda value
-        var_lambda = 0.01
-        new_belief = np.array([
-            (var_lambda * 0.5) + ((1 - var_lambda) * belief)
-            for belief in new_belief
-        ])
-
-        # print("After:", new_belief)
 
         invalid_belief = np.isnan(np.sum(new_belief))
 
