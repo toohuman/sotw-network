@@ -86,7 +86,7 @@ for g, graph in enumerate(graph_types):
                 # flatui = ["#9b59b6", "#3498db", "#95a5a6", "#e74c3c", "#34495e", "#2ecc71"]
                 # sns.set_palette(sns.color_palette(flatui))
                 sns.set_palette("rocket", len(evidence_rates))
-                for e, er in enumerate(evidence_rates):
+                for e, er in reversed(list(enumerate(evidence_rates))):
                     ax = sns.lineplot(iterations, results[e], linewidth = 2, color=sns.color_palette()[e], label=evidence_strings[e])
                     plt.fill_between(iterations, lowers[e], uppers[e], facecolor=sns.color_palette()[e], edgecolor="none", alpha=0.3, antialiased=True)
                 plt.xlabel(r'Time $t$')

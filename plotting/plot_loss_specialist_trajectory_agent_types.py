@@ -52,15 +52,15 @@ for g, graph in enumerate(graph_types):
                         with lzma.open(result_directory + file_name, "rb") as file:
                             data = pickle.load(file)
 
+                        for i, tests in enumerate(data):
+                            sorted_data = sorted([x[0] for x in tests])
+                            lowers[e][i] = sorted_data[PERC_LOWER - 1]
+                            uppers[e][i] = sorted_data[PERC_UPPER - 1]
+                            results[e][i] = np.average([x[0] for x in tests])
+
                     except FileNotFoundError:
                         print("MISSING: " + file_name)
                         continue
-
-                    for i, tests in enumerate(data):
-                        sorted_data = sorted([x[0] for x in tests])
-                        lowers[e][i] = sorted_data[PERC_LOWER - 1]
-                        uppers[e][i] = sorted_data[PERC_UPPER - 1]
-                        results[e][i] = np.average([x[0] for x in tests])
 
                 if data is None:
                     continue
@@ -81,8 +81,6 @@ for g, graph in enumerate(graph_types):
                             convergence_times[e] = -1
                             iterations_maxed = True
 
-                max_iteration += 50 if not iterations_maxed else int(len(iterations)/2)
-
                 print("{} :: {} states | {} agents | {:.2f} noise".format(graph, states, agents, noise))
                 for e, er in enumerate(evidence_rates):
                     print("   [{:.2f} er]: {} t".format(er, convergence_times[e]))
@@ -91,7 +89,7 @@ for g, graph in enumerate(graph_types):
                 # flatui = ["#9b59b6", "#3498db", "#95a5a6", "#e74c3c", "#34495e", "#2ecc71"]
                 # sns.set_palette(sns.color_palette(flatui))
                 sns.set_palette("rocket", len(evidence_rates))
-                for e, er in enumerate(evidence_rates):
+                for e, er in reversed(list(enumerate(evidence_rates))):
                     ax = sns.lineplot(iterations, results[e], linewidth = 2, color=sns.color_palette()[e], label=evidence_strings[e])
                     plt.fill_between(iterations, lowers[e], uppers[e], facecolor=sns.color_palette()[e], edgecolor="none", alpha=0.3, antialiased=True)
                 plt.xlabel(r'Time $t$')
