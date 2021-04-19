@@ -16,13 +16,14 @@ noise_values = [0/100, 5/100, 10/100, 20/100, 30/100, 40/100, 50/100]
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
 connectivity_strings = ["{:.2f}".format(x) for x in connectivity_values]
 
-agent_type = "probabilisticagent"
+agent_type = "averageagent"
 
 result_directory = "../../results/test_results/sotw-network-temp/{}/".format(agent_type)
 
 iterations = [x for x in range(10001)]
 conn = 1.0
 
+print(agent_type)
 for s, states in enumerate(states_set):
     for n, noise in enumerate(noise_values):
         for a, agents in enumerate(agents_set):

@@ -7,9 +7,6 @@ import sys
 
 import numpy as np
 
-# Add the directory paths so that the submodules can also find the relative modules.
-sys.path.append("sotw")
-
 # from agents.agent import Agent
 from agents.agent import *
 from utilities import results
@@ -21,7 +18,6 @@ steady_state_threshold = 100
 trajectory_populations = [10, 50, 100]
 
 # Set the graph type
-
 # Erdos-Reyni: random | Watts-Strogatz: small-world.
 random_graphs = ["ER", "WS"]
 # What we are calling "pathological" cases.
@@ -30,14 +26,14 @@ clique_graphs = [
     "connected_star", "complete_star",
     "caveman", "complete_caveman"
 ]
-graph_type = "connected_star"
+graph_type = "ER"
 
 evidence_only = False
 
-evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
-evidence_rate = 1.0
+evidence_rates = [0.001, 0.005] # [0.01, 0.05, 0.1, 0.5, 1.0]
+evidence_rate = 0.005
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
-noise_value = 0.0
+noise_value = 0.1
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
 connectivity_value = 1.0
 knn_values = [2, 4, 6, 8, 10, 20, 50]
@@ -45,8 +41,9 @@ k_nearest_neighbours = None
 clique_size = 10
 
 # Set the type of agent: three-valued, voter or probabilistic
-# (Three-valued) Agent | VoterAgent | ProbabilisticAgent | DampenedProbabilisticAgent
-agent_type = DampenedProbabilisticAgent
+# (Three-valued) Agent | VoterAgent |
+# ProbabilisticAgent | DampenedAgent | AverageAgent
+agent_type = Agent
 # Set the initialisation function for agent beliefs - option to add additional
 # initialisation functions later.
 init_beliefs = agent_type.ignorant_belief
@@ -194,12 +191,13 @@ def main():
     random_instance.seed(128) if arguments.random == False else random_instance.seed()
 
     # Output variables
-    directory = "../results/test_results/sotw-network-temp/{}/".format(agent_type.__name__.lower())
+    # directory = "../results/test_results/sotw-network-temp/{}/".format(agent_type.__name__.lower())
+    directory = "../results/test_results/sotw-network/"
     file_name_params = []
 
     param_strings = list()
     param_strings += ["States: {}".format(arguments.states)]
-    param_strings += ["Agents: {}".format(arguments.agents)]
+    param_strings += ["Agents: {} - {}".format(arguments.agents, agent_type.__name__)]
     param_strings += ["Connectivity: {} | {}".format(arguments.connectivity, graph_type)]
     if graph_type == "WS":
         param_strings += ["k: {}".format(arguments.knn)]
@@ -265,6 +263,8 @@ def main():
         entropy_data = [0.0 for x in range(3)]
         error_data = [0.0 for x in range(3)]
 
+        # print(loss_results[0][test][0])
+
         # Main loop of the experiments. Starts at 1 because we have recorded the agents'
         # initial state above, at the "0th" index.
         for iteration in range(1, iteration_limit + 1):
@@ -288,6 +288,7 @@ def main():
                     np.min(loss_values),
                     np.max(loss_values)
                 ]
+                # print(loss_results[iteration][test][0])
 
             # If the simulation has converged, end the test.
             else:
@@ -309,6 +310,8 @@ def main():
                 # Simulation has converged, so break main loop.
                 break
 
+        # print(np.average(steady_state_results[test]))
+
         # Reset the static identity for the Agent class.
         agent_type.identity = 0
 
@@ -329,7 +332,7 @@ def main():
         if graph_type in clique_graphs:
             file_name_params.append("{}".format(clique_size))
 
-    file_name_params.append("{:.2f}er".format(evidence_rate))
+    file_name_params.append("{:.3f}er".format(evidence_rate))
     if noise_value is not None:
         file_name_params.append("{:.2f}nv".format(noise_value))
 
@@ -352,7 +355,7 @@ def main():
 if __name__ == "__main__":
 
     # "standard" | "evidence" | "noise" | "en" | "ce" | "cen" | "kce"
-    test_set = "evidence"
+    test_set = "noise"
 
     if test_set == "standard":
 

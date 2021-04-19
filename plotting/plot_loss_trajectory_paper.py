@@ -9,7 +9,7 @@ PERC_LOWER = 10
 PERC_UPPER = 90
 
 states_set = [100]
-agents_set = [10, 10, 50, 100]
+agents_set = [10, 50, 100]
 evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
 evidence_strings = ["{:.2f}".format(x) for x in evidence_rates]
 noise_values = [0/100, 5/100, 10/100, 20/100, 30/100, 40/100, 50/100]
@@ -78,38 +78,40 @@ for s, states in enumerate(states_set):
                 print("   [{:.2f} er]: {} t".format(er, convergence_times[e]))
 
 
-            # flatui = ["#9b59b6", "#3498db", "#95a5a6", "#e74c3c", "#34495e", "#2ecc71"]
-            # sns.set_palette(sns.color_palette(flatui))
-            sns.set_palette("rocket", len(evidence_rates))
-            for e, er in reversed(list(enumerate(evidence_rates))):
-                ax = sns.lineplot(iterations, results[e], linewidth = 2, color=sns.color_palette()[e], label=evidence_strings[e])
-                plt.fill_between(iterations, lowers[e], uppers[e], facecolor=sns.color_palette()[e], edgecolor="none", alpha=0.3, antialiased=True)
-            plt.xlabel(r'Time $t$')
-            plt.ylabel("Average Error")
-            plt.ylim(-0.01, 0.525)
-            if conn == 1.0:
-                plt.xlim(0, 1500)
-                # plt.xlim(0, 10000)
-            elif conn == 0.0:
-                plt.xlim(0, 10000)
-            # plt.title("Average loss | {} states, {} er, {} noise".format(states, er, noise))
 
-            ax.get_legend().remove()
+            for _ in range(2):
+                # flatui = ["#9b59b6", "#3498db", "#95a5a6", "#e74c3c", "#34495e", "#2ecc71"]
+                # sns.set_palette(sns.color_palette(flatui))
+                sns.set_palette("rocket", len(evidence_rates))
+                for e, er in reversed(list(enumerate(evidence_rates))):
+                    ax = sns.lineplot(iterations, results[e], linewidth = 2, color=sns.color_palette()[e], label=evidence_strings[e])
+                    plt.fill_between(iterations, lowers[e], uppers[e], facecolor=sns.color_palette()[e], edgecolor="none", alpha=0.3, antialiased=True)
+                plt.xlabel(r'Time $t$')
+                plt.ylabel("Average Error")
+                plt.ylim(-0.01, 0.525)
+                if conn == 1.0:
+                    plt.xlim(0, 1500)
+                    # plt.xlim(0, 10000)
+                elif conn == 0.0:
+                    plt.xlim(0, 10000)
+                # plt.title("Average loss | {} states, {} er, {} noise".format(states, er, noise))
 
-            # import pylab
-            # fig_legend = pylab.figure(figsize=(1,2))
-            # pylab.figlegend(*ax.get_legend_handles_labels(), loc="upper left", ncol=len(connectivity_strings))
-            # fig_legend.show()
-            # plt.show()
+                ax.get_legend().remove()
 
-            # import time
-            # time.sleep(10)
+                # import pylab
+                # fig_legend = pylab.figure(figsize=(1,2))
+                # pylab.figlegend(*ax.get_legend_handles_labels(), loc="upper left", ncol=len(connectivity_strings))
+                # fig_legend.show()
+                # plt.show()
 
-            plt.tight_layout()
-            # Complete graph
-            if conn == 1.0:
-                plt.savefig("../../results/graphs/sotw-network/loss_trajectory_{}_states_{}_agents_{:.2f}_noise.pdf".format(states, agents, noise))
-            # Evidence-only graph
-            elif conn == 0.0:
-                plt.savefig("../../results/graphs/sotw-network/loss_trajectory_ev_only_{}_states_{}_agents_{:.2f}_noise.pdf".format(states, agents, noise))
-            plt.clf()
+                # import time
+                # time.sleep(10)
+
+                plt.tight_layout()
+                # Complete graph
+                if conn == 1.0:
+                    plt.savefig("../../results/graphs/sotw-network/loss_trajectory_{}_states_{}_agents_{:.2f}_noise.pdf".format(states, agents, noise))
+                # Evidence-only graph
+                elif conn == 0.0:
+                    plt.savefig("../../results/graphs/sotw-network/loss_trajectory_ev_only_{}_states_{}_agents_{:.2f}_noise.pdf".format(states, agents, noise))
+                plt.clf()

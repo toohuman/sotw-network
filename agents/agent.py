@@ -182,7 +182,7 @@ class VoterAgent(Agent):
 
 class ProbabilisticAgent(Agent):
     """
-    An agent adopting a probabilistic model of belief representations
+    An agent adopting a probabilistic model of belief representation
     and consensus formation.
     """
 
@@ -193,11 +193,12 @@ class ProbabilisticAgent(Agent):
     @staticmethod
     def consensus(belief1, belief2):
         """
-        Bayesian updating.
+        Probabilistic updating using the product operator. This combines two (possibly conflicting)
+        probability distributions into a single probability distribution.
+        Bayesian updating of each independent variable based on evidence.
         """
 
-        # Combine the belief matrices by flipping a coin for any states on
-        # which the two beliefs disagree, and adopting the rest.
+        # Combine the belief matrices using the product operator from (Lee et al. 2018)
         new_belief = np.array([
             (belief1[i] * belief2[i]) /
             (belief1[i] * belief2[i] + (1.0 - belief1[i]) * (1.0 - belief2[i]))
@@ -285,7 +286,7 @@ class DampenedAgent(ProbabilisticAgent):
     @staticmethod
     def consensus(belief1, belief2):
         """
-        A dampened variant of Bayesian updating.
+        A dampened variant of the probabilistic .
         In this variant, the variable lambda is used to prevent agents from
         reaching absolute certainty.
         """

@@ -19,7 +19,7 @@ graph_types = [
     "caveman_10", "complete_caveman_10"
 ]
 
-agent_type = "voteragent"
+agent_type = "probabilisticagent"
 
 result_directory = "../../results/test_results/sotw-network-temp/{}/".format(agent_type)
 
