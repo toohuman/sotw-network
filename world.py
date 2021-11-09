@@ -13,13 +13,13 @@ from utilities import results
 from utilities import topologies
 
 tests = 100
-iteration_limit = 10_000
+iteration_limit = 50_000
 steady_state_threshold = 100
 trajectory_populations = [10, 50, 100]
 
 # Set the graph type
 # Erdos-Reyni: random | Watts-Strogatz: small-world.
-random_graphs = ["ER", "WS"]
+random_graphs = ["ER", "WS", "BA"]
 # What we are calling "pathological" cases.
 specialist_graphs = ["line", "star"]
 clique_graphs = [
@@ -30,20 +30,24 @@ graph_type = "ER"
 
 evidence_only = False
 
-evidence_rates = [0.001, 0.005] # [0.01, 0.05, 0.1, 0.5, 1.0]
-evidence_rate = 0.005
-noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
-noise_value = 0.1
+fusion_rates = [1, 5, 10, 20, 30, 40, 50]   # Number of pairs of agents to be selected for belief fusion
+fusion_rate = None
+evidence_rates = [0.5] # [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0]
+evidence_rate = 1.0
+noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5] # [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
+noise_value = 0.2
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
 connectivity_value = 1.0
 knn_values = [2, 4, 6, 8, 10, 20, 50]
 k_nearest_neighbours = None
+m_values = [1, 2, 3, 4, 5, 10, 30, 50]
+m_value = None
 clique_size = 10
 
 # Set the type of agent: three-valued, voter or probabilistic
-# (Three-valued) Agent | VoterAgent |
+# (Three-valued) Agent | VoterAgent | StochasticAgent
 # ProbabilisticAgent | DampenedAgent | AverageAgent
-agent_type = Agent
+agent_type = ErrorCorrectingAgent
 # Set the initialisation function for agent beliefs - option to add additional
 # initialisation functions later.
 init_beliefs = agent_type.ignorant_belief
@@ -52,7 +56,7 @@ init_beliefs = agent_type.ignorant_belief
 # 1. Remove separate agents(nodes) and edges lists, using only networkx instead.
 
 def initialisation(
-    num_of_agents, states, network, connectivity, knn, random_instance
+    num_of_agents, states, network, connectivity, knn, m, random_instance
 ):
     """
     This initialisation function
@@ -79,6 +83,8 @@ def initialisation(
     # and a connectivity parameter p
     elif graph_type == "WS":
         edges += nx.watts_strogatz_graph(len(agents), knn, connectivity, random_instance).edges
+    elif graph_type == "BA":
+        edges == nx.barabasi_albert_graph(len(agents), m, random_instance).edges
     else:
         try:
             edges += getattr(topology, graph_type)(len(agents), clique_size, random_instance)
@@ -93,7 +99,7 @@ def initialisation(
     return
 
 def main_loop(
-    states: int, network, true_state: [], random_instance,
+    states: int, network, true_state: list(), random_instance,
     entropy_data, error_data
 ):
     """
@@ -131,24 +137,37 @@ def main_loop(
 
     # Agents then combine at random
 
-    try:
-        chosen_nodes = random_instance.choice(list(network.edges()))
-    except IndexError:
-        return True
+    network_copy = network.copy()
 
-    agent1, agent2 = chosen_nodes[0], chosen_nodes[1]
-
-    if agent_type.__name__ == "VoterAgent":
-        new_belief = agent_type.consensus(
-            agent1.belief, agent2.belief, random_instance
-        )
+    if fusion_rate is not None:
+        num_of_edges = int(network.number_of_nodes() * (fusion_rate/100))
     else:
-        new_belief = agent_type.consensus(agent1.belief, agent2.belief)
+        num_of_edges = 1
 
-    if new_belief is not None:
-        # Symmetric, so both agents adopt the combination belief.
-        agent1.update_belief(new_belief)
-        agent2.update_belief(new_belief)
+    for i in range(num_of_edges):
+        try:
+            agent1, agent2 = random_instance.choice(list(network_copy.edges))
+        except IndexError:
+            return True
+
+        if agent_type.__name__ in ["VoterAgent", "StochasticAgent"]:
+            new_belief = agent_type.consensus(
+                agent1.belief, agent2.belief, random_instance
+            )
+        elif agent_type.__name__ in ["ErrorCorrectingAgent"]:
+            new_belief = None
+            agent1.update_belief(agent_type.consensus(agent1.belief, agent2.belief))
+            agent2.update_belief(agent_type.consensus(agent2.belief, agent1.belief))
+        else:
+            new_belief = agent_type.consensus(agent1.belief, agent2.belief)
+
+        if new_belief is not None:
+            # Symmetric, so both agents adopt the combination belief.
+            agent1.update_belief(new_belief)
+            agent2.update_belief(new_belief)
+
+        network_copy.remove_node(agent1)
+        network_copy.remove_node(agent2)
 
     return True
 
@@ -171,6 +190,7 @@ def main():
     parser.add_argument("-c", "--connectivity", type=float, help="Connectivity of the random graph in [0,1],\
         e.g., probability of an edge between any two nodes.")
     parser.add_argument("-k", "--knn", type=int, help="k nearest neighbours to which each node is connected.")
+    parser.add_argument("-m", "--m", type=int, help="Number of edges to attach from a new node to existing nodes.")
     parser.add_argument("-r", "--random", action="store_true", help="Random seeding of the RNG.")
     arguments = parser.parse_args()
 
@@ -179,6 +199,10 @@ def main():
     if arguments.knn is None and k_nearest_neighbours is not None:
         arguments.knn = k_nearest_neighbours
         if arguments.knn > arguments.agents:
+            return
+    if arguments.m is None and m_value is not None:
+        arguments.m = m_value
+        if arguments.m > arguments.agents:
             return
 
     if arguments.connectivity is None and graph_type in random_graphs:
@@ -191,8 +215,8 @@ def main():
     random_instance.seed(128) if arguments.random == False else random_instance.seed()
 
     # Output variables
-    # directory = "../results/test_results/sotw-network-temp/{}/".format(agent_type.__name__.lower())
-    directory = "../results/test_results/sotw-network/"
+    directory = "../results/test_results/sotw-network-temp/{}/".format(agent_type.__name__.lower())
+    # directory = "../results/test_results/sotw-network/"
     file_name_params = []
 
     param_strings = list()
@@ -201,6 +225,9 @@ def main():
     param_strings += ["Connectivity: {} | {}".format(arguments.connectivity, graph_type)]
     if graph_type == "WS":
         param_strings += ["k: {}".format(arguments.knn)]
+    elif graph_type == "BA":
+        param_strings += ["m: {}".format(arguments.m)]
+    param_strings += ["Fusion rate: {}".format(fusion_rate)]
     param_strings += ["Evidence rate: {}".format(evidence_rate)]
     param_strings += ["Noise value: {}".format(noise_value)]
     print("    ".join(param_strings))
@@ -226,7 +253,7 @@ def main():
     for test in range(tests):
 
         # True state of the world
-        if agent_type.__name__ == "Agent":
+        if agent_type.__name__ in ["Agent", "ErrorCorrectingAgent"]:
             true_state = np.array([random_instance.choice([-1,1]) for x in range(arguments.states)])
         # if agent_type.__name__ == "VoterAgent" or agent_type.__name__ == "ProbabilisticAgent":
         else:
@@ -243,6 +270,7 @@ def main():
             network,
             arguments.connectivity,
             arguments.knn,
+            arguments.m,
             random_instance
         )
 
@@ -327,6 +355,9 @@ def main():
         if arguments.connectivity is not None and arguments.knn is not None:
             file_name_params.append("{}k".format(arguments.knn))
             file_name_params.append("{:.2f}con".format(arguments.connectivity))
+    elif graph_type == "BA":
+        if arguments.m is not None:
+            file_name_params.append("BA_{}m".format(arguments.m))
     elif graph_type in specialist_graphs + clique_graphs:
         file_name_params.append("{}".format(graph_type))
         if graph_type in clique_graphs:
@@ -335,6 +366,8 @@ def main():
     file_name_params.append("{:.3f}er".format(evidence_rate))
     if noise_value is not None:
         file_name_params.append("{:.2f}nv".format(noise_value))
+    if fusion_rate is not None:
+        file_name_params.append("{}fr".format(fusion_rate))
 
     # Write loss results to pickle file
     if arguments.agents in trajectory_populations:
@@ -355,7 +388,7 @@ def main():
 if __name__ == "__main__":
 
     # "standard" | "evidence" | "noise" | "en" | "ce" | "cen" | "kce"
-    test_set = "noise"
+    test_set = "evidence"
 
     if test_set == "standard":
 
@@ -429,3 +462,12 @@ if __name__ == "__main__":
                 for er in evidence_rates:
                     evidence_rate = er
                     main()
+
+    elif test_set == "me":
+
+        for m in m_values:
+            m_value = m
+
+            for er in evidence_rates:
+                evidence_rate = er
+                main()

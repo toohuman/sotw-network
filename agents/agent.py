@@ -180,6 +180,62 @@ class VoterAgent(Agent):
         return evidence
 
 
+class StochasticAgent(Agent):
+    """
+    An agent which randomly chooses between a conservative operator and the standard
+    three-valued consensus operator.
+    """
+
+    def __init__(self, belief):
+        super().__init__(belief)
+
+
+    @staticmethod
+    def consensus(belief1, belief2, random_instance, random=True):
+        """
+        With a 50:50 chance, prefer a conservative (maximally uncertain) belief over a
+        typical consensus position.
+        """
+
+        if random and random_instance.randint(0,1):
+            # Combine the belief matrices by flipping a coin for any states on
+            # which the two beliefs disagree, and adopting the rest.
+            new_belief = np.array([
+                belief1[i] if belief1[i] == belief2[i] else 0
+                for i in range(len(belief1))
+            ])
+        else:
+            # Combine the belief matrices and then clip them to be in
+            # the set of possible values: {-1,0,1}
+            new_belief = np.clip(np.add(belief1, belief2), -1, 1)
+
+        return new_belief
+
+
+    def evidential_updating(self, true_state, noise_value, random_instance):
+        """
+        Update the agent's belief based on the evidence they received.
+        Increment the evidence counter.
+        """
+
+        evidence = self.random_evidence(
+            true_state,
+            noise_value,
+            random_instance
+        )
+
+        new_belief = self.consensus(self.belief, evidence, random_instance, random=False)
+
+        # Track the number of iterations.
+        if np.array_equal(self.belief, new_belief):
+            self.since_change += 1
+        else:
+            self.since_change = 0
+
+        self.belief = new_belief
+        self.evidence += 1
+
+
 class ProbabilisticAgent(Agent):
     """
     An agent adopting a probabilistic model of belief representation
@@ -349,3 +405,68 @@ class AverageAgent(ProbabilisticAgent):
         else:
             return None
 
+
+class ErrorCorrectingAgent(Agent):
+    """
+    This agent adopts a three-valued logic for uncertain belief representation, but instead of
+    learning information from other agents, it seeks only to become less certain about conflicting
+    propositions. Hence, this agent only fuses their beliefs in the pursuit of removing errors.
+    """
+
+    def __init__(self, belief):
+        super().__init__(belief)
+
+
+    @staticmethod
+    def consensus(belief1, belief2):
+        """
+        Upon conflict, become uncertain about that specific proposition. Do not learn about
+        uncertain propositions from other agents.
+
+        This version is asymmetric, and so we will assume belief 1 is the focal agent.
+        """
+
+        # import inspect
+        # current_frame = inspect.currentframe()
+        # caller_frame = inspect.getouterframes(current_frame, 1)
+        # print("Called by:", caller_frame[1][3])
+
+        print("Beliefs:", belief1, belief2)
+
+        new_belief = np.array([
+            0 if truth_values[0] != truth_values[1]
+            and truth_values[0] != 0 and truth_values[1] != 0
+            else truth_values[0]
+            for truth_values in zip(belief1, belief2)
+        ])
+
+        print("New belief:", new_belief)
+
+        return new_belief
+
+
+    def evidential_updating(self, true_state, noise_value, random_instance):
+        """
+        Update the agent's belief based on the evidence they received.
+        Increment the evidence counter.
+
+        Call the Agent class's consensus operator for proper updating based
+        on evidence.
+        """
+
+        evidence = self.random_evidence(
+            true_state,
+            noise_value,
+            random_instance
+        )
+
+        new_belief = super().consensus(self.belief, evidence)
+
+        # Track the number of iterations.
+        if np.array_equal(self.belief, new_belief):
+            self.since_change += 1
+        else:
+            self.since_change = 0
+
+        self.belief = new_belief
+        self.evidence += 1
