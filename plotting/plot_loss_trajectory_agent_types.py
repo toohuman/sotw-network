@@ -10,17 +10,17 @@ PERC_UPPER = 90
 
 states_set = [100]
 agents_set = [10, 100]
-evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0] # [0.01, 0.05, 0.1, 0.5, 1.0]
-evidence_strings = ["{:.2f}".format(x) for x in evidence_rates]
+evidence_rates = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0] # [0.01, 0.05, 0.1, 0.5, 1.0]
+evidence_strings = ["{:.3f}".format(x) for x in evidence_rates]
 noise_values = [0/100, 5/100, 10/100, 20/100, 30/100, 40/100, 50/100]
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
 connectivity_strings = ["{:.2f}".format(x) for x in connectivity_values]
 
-agent_type = "averageagent"
+agent_type = "errorcorrectingagent"
 
 result_directory = "../../results/test_results/sotw-network-temp/{}/".format(agent_type)
 
-iterations = [x for x in range(10001)]
+iterations = [x for x in range(50001)]
 conn = 1.0
 
 print(agent_type)
@@ -39,7 +39,7 @@ for s, states in enumerate(states_set):
                     "{}s".format(states),
                     "{}a".format(agents),
                     "{:.2f}con".format(conn),
-                    "{:.2f}er".format(er),
+                    "{:.3f}er".format(er),
                     "{:.2f}nv".format(noise)
                 ]
                 file_ext = ".pkl.xz"
@@ -93,13 +93,13 @@ for s, states in enumerate(states_set):
             plt.ylabel("Average Error")
             plt.ylim(-0.01, 0.525)
             if conn == 1.0:
-                plt.xlim(0, 1500)
-                # plt.xlim(0, 10000)
+                plt.xlim(0, 50000)
+                # plt.xlim(0, 1500)
             elif conn == 0.0:
                 plt.xlim(0, 10000)
             # plt.title("Average loss | {} states, {} er, {} noise".format(states, er, noise))
 
-            ax.get_legend().remove()
+            # ax.get_legend().remove()
 
             # import pylab
             # fig_legend = pylab.figure(figsize=(1,2))

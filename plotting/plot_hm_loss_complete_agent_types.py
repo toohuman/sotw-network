@@ -10,14 +10,14 @@ PERC_UPPER = 90
 
 agents_set = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 states_set = [10, 100]
-evidence_rates = [0.01, 0.05, 0.1, 0.5, 1.0]
-evidence_strings = ["{:.2f}".format(x) for x in evidence_rates]
+evidence_rates = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0] # [0.01, 0.05, 0.1, 0.5, 1.0]
+evidence_strings = ["{:.3f}".format(x) for x in evidence_rates]
 noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
 noise_strings = ["{:.2f}".format(x) for x in noise_values]
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
 connectivity_strings = ["{:.2f}".format(x) for x in connectivity_values]
 
-agent_type = "averageagent"
+agent_type = "errorcorrectingagent"
 
 result_directory = "../../results/test_results/sotw-network-temp/{}/".format(agent_type)
 
@@ -36,7 +36,7 @@ for a, agents in enumerate(agents_set):
                     "{}s".format(states),
                     "{}a".format(agents),
                     "{:.2f}con".format(1),
-                    "{:.2f}er".format(er),
+                    "{:.3f}er".format(er),
                     "{:.2f}nv".format(noise)
                 ]
                 file_ext = ".pkl.xz"

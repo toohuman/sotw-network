@@ -19,7 +19,7 @@ def loss(agent_type, belief, true_state, normalised = True):
     # Sum all of the inconsistencies between the true state of the world and the
     # agent's belief.
     # Divide answer by 2 as truth values are -1 (false), 0 (uncertain), 1 (true).
-    if agent_type.__name__ == "Agent":
+    if agent_type.__name__ in ["Agent", "StochasticAgent", "ErrorCorrectingAgent"]:
         differences = np.sum(abs(np.subtract(belief, true_state)))/2.0
     else:
         differences = np.sum(abs(np.subtract(belief, true_state)))
