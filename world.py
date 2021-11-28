@@ -6,6 +6,8 @@ import random
 import sys
 
 import numpy as np
+from numpy.lib.function_base import _update_dim_sizes
+from numpy.lib.stride_tricks import broadcast_arrays
 
 # from agents.agent import Agent
 from agents.agent import *
@@ -13,7 +15,7 @@ from utilities import results
 from utilities import topologies
 
 tests = 100
-iteration_limit = 50_000
+iteration_limit = 10_000
 steady_state_threshold = 100
 trajectory_populations = [10, 50, 100]
 
@@ -29,25 +31,29 @@ clique_graphs = [
 graph_type = "ER"
 
 evidence_only = False
+update_type = "Asymmetric"    # Asymmetric
 
 fusion_rates = [1, 5, 10, 20, 30, 40, 50]   # Number of pairs of agents to be selected for belief fusion
-fusion_rate = None
-evidence_rates = [0.5] # [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0]
+fusion_rate = 1
+fusion_probs = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0]   # The probability with which each agent shall listen and update its belief
+fusion_prob = 1.0
+evidence_rates = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0] # [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0]
 evidence_rate = 1.0
-noise_values = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5] # [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
-noise_value = 0.2
+noise_values = [0.3, 0.4, 0.5] # [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
+noise_value = 0.0
 connectivity_values = [0.0, 0.01, 0.02, 0.05, 0.1, 0.5, 1.0]
 connectivity_value = 1.0
 knn_values = [2, 4, 6, 8, 10, 20, 50]
 k_nearest_neighbours = None
 m_values = [1, 2, 3, 4, 5, 10, 30, 50]
-m_value = None
+m_value = 1
 clique_size = 10
 
 # Set the type of agent: three-valued, voter or probabilistic
 # (Three-valued) Agent | VoterAgent | StochasticAgent
 # ProbabilisticAgent | DampenedAgent | AverageAgent
-agent_type = ErrorCorrectingAgent
+# CautiousAdventurousAgent
+agent_type = Agent
 # Set the initialisation function for agent beliefs - option to add additional
 # initialisation functions later.
 init_beliefs = agent_type.ignorant_belief
@@ -84,7 +90,7 @@ def initialisation(
     elif graph_type == "WS":
         edges += nx.watts_strogatz_graph(len(agents), knn, connectivity, random_instance).edges
     elif graph_type == "BA":
-        edges == nx.barabasi_albert_graph(len(agents), m, random_instance).edges
+        edges += nx.barabasi_albert_graph(len(agents), m, random_instance).edges
     else:
         try:
             edges += getattr(topology, graph_type)(len(agents), clique_size, random_instance)
@@ -137,37 +143,53 @@ def main_loop(
 
     # Agents then combine at random
 
-    network_copy = network.copy()
+    if update_type == "Symmetric":
 
-    if fusion_rate is not None:
-        num_of_edges = int(network.number_of_nodes() * (fusion_rate/100))
-    else:
-        num_of_edges = 1
+        network_copy = network.copy()
 
-    for i in range(num_of_edges):
-        try:
-            agent1, agent2 = random_instance.choice(list(network_copy.edges))
-        except IndexError:
-            return True
-
-        if agent_type.__name__ in ["VoterAgent", "StochasticAgent"]:
-            new_belief = agent_type.consensus(
-                agent1.belief, agent2.belief, random_instance
-            )
-        elif agent_type.__name__ in ["ErrorCorrectingAgent"]:
-            new_belief = None
-            agent1.update_belief(agent_type.consensus(agent1.belief, agent2.belief))
-            agent2.update_belief(agent_type.consensus(agent2.belief, agent1.belief))
+        if fusion_rate is not None:
+            num_of_edges = int(network.number_of_nodes() * (fusion_rate/100))
         else:
-            new_belief = agent_type.consensus(agent1.belief, agent2.belief)
+            num_of_edges = 1
 
-        if new_belief is not None:
-            # Symmetric, so both agents adopt the combination belief.
-            agent1.update_belief(new_belief)
-            agent2.update_belief(new_belief)
+        for i in range(num_of_edges):
+            try:
+                agent1, agent2 = random_instance.choice(list(network_copy.edges))
+            except IndexError:
+                return True
 
-        network_copy.remove_node(agent1)
-        network_copy.remove_node(agent2)
+            if agent_type.__name__ in ["VoterAgent", "StochasticAgent", "CautiousAdventurousAgent"]:
+                new_belief = agent_type.consensus(
+                    agent1.belief, agent2.belief, random_instance
+                )
+            elif agent_type.__name__ in ["ErrorCorrectingAgent"]:
+                new_belief = None
+                agent1.update_belief(agent_type.consensus(agent1.belief, agent2.belief))
+                agent2.update_belief(agent_type.consensus(agent2.belief, agent1.belief))
+            else:
+                new_belief = agent_type.consensus(agent1.belief, agent2.belief)
+
+            if new_belief is not None:
+                # Symmetric, so both agents adopt the combination belief.
+                agent1.update_belief(new_belief)
+                agent2.update_belief(new_belief)
+
+            network_copy.remove_node(agent1)
+            network_copy.remove_node(agent2)
+
+    elif update_type == "Asymmetric":
+        for agent in network.nodes:
+            if random_instance.random() < fusion_prob:
+                try:
+                    broadcasting_agents = list(nx.node_connected_component(network, agent))
+                    agent.obtained_belief = random_instance.choice(broadcasting_agents).belief
+                except IndexError:
+                    continue
+            else:
+                agent.obtained_belief = None
+        for agent in network.nodes:
+            if agent.obtained_belief is not None:
+                agent.update_belief(agent_type.consensus(agent.belief, agent.obtained_belief))
 
     return True
 
@@ -227,7 +249,10 @@ def main():
         param_strings += ["k: {}".format(arguments.knn)]
     elif graph_type == "BA":
         param_strings += ["m: {}".format(arguments.m)]
-    param_strings += ["Fusion rate: {}".format(fusion_rate)]
+    if update_type == "Symmetric":
+        param_strings += ["Fusion rate: {}".format(fusion_rate)]
+    elif update_type == "Asymmetric":
+        param_strings += ["Fusion prob: {}".format(fusion_prob)]
     param_strings += ["Evidence rate: {}".format(evidence_rate)]
     param_strings += ["Noise value: {}".format(noise_value)]
     print("    ".join(param_strings))
@@ -366,8 +391,15 @@ def main():
     file_name_params.append("{:.3f}er".format(evidence_rate))
     if noise_value is not None:
         file_name_params.append("{:.2f}nv".format(noise_value))
-    if fusion_rate is not None:
-        file_name_params.append("{}fr".format(fusion_rate))
+    if update_type == "Symmetric":
+        if fusion_rate is not None:
+            file_name_params.append("{}fr".format(fusion_rate))
+    elif update_type == "Asymmetric":
+        if fusion_prob is not None:
+            file_name_params.append("{:.3f}fp".format(fusion_prob))
+
+    if evidence_only:
+        file_name_params.append("eo")
 
     # Write loss results to pickle file
     if arguments.agents in trajectory_populations:
@@ -388,7 +420,7 @@ def main():
 if __name__ == "__main__":
 
     # "standard" | "evidence" | "noise" | "en" | "ce" | "cen" | "kce"
-    test_set = "evidence"
+    test_set = "en"
 
     if test_set == "standard":
 

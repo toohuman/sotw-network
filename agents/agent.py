@@ -3,11 +3,12 @@ import numpy as np
 class Agent:
     """ Thee-valued agent. """
 
-    identity        = 0
+    identity = 0
 
     def __init__(self, belief):
 
         self.belief = belief
+        self.obtained_belief = None
         self.evidence = 0
         self.interactions = 0
         self.since_change = 0
@@ -431,7 +432,7 @@ class ErrorCorrectingAgent(Agent):
         # caller_frame = inspect.getouterframes(current_frame, 1)
         # print("Called by:", caller_frame[1][3])
 
-        print("Beliefs:", belief1, belief2)
+        # print("Beliefs:", belief1, belief2)
 
         new_belief = np.array([
             0 if truth_values[0] != truth_values[1]
@@ -440,7 +441,67 @@ class ErrorCorrectingAgent(Agent):
             for truth_values in zip(belief1, belief2)
         ])
 
-        print("New belief:", new_belief)
+        # print("New belief:", new_belief)
+
+        return new_belief
+
+
+    def evidential_updating(self, true_state, noise_value, random_instance):
+        """
+        Update the agent's belief based on the evidence they received.
+        Increment the evidence counter.
+
+        Call the Agent class's consensus operator for proper updating based
+        on evidence.
+        """
+
+        evidence = self.random_evidence(
+            true_state,
+            noise_value,
+            random_instance
+        )
+
+        new_belief = Agent.consensus(self.belief, evidence)
+
+        # Track the number of iterations.
+        if np.array_equal(self.belief, new_belief):
+            self.since_change += 1
+        else:
+            self.since_change = 0
+
+        self.belief = new_belief
+        self.evidence += 1
+
+class CautiousAdventurousAgent(Agent):
+    """
+    This agent adopts a three-valued logic for uncertain belief representation, but stochastically
+    chooses between the typical three-valued consensus operator and a highly cautious operator that
+    propagates uncertainty (as opposed to propagating certainty).
+    """
+
+    def __init__(self, belief):
+        super().__init__(belief)
+
+
+    @staticmethod
+    def consensus(belief1, belief2, random_instance):
+        """
+        Upon any disagreement, become uncertain about those propositions. Only agreement retains
+        certainty.
+        """
+
+        # print("Beliefs:", belief1, belief2)
+
+        if random_instance.choice([0,1]):
+            new_belief = Agent.consensus(belief1, belief2)
+        else:
+            new_belief = np.array([
+                truth_values[0] if truth_values[0] == truth_values[1]
+                else 0
+                for truth_values in zip(belief1, belief2)
+            ])
+
+        # print("New belief:", new_belief)
 
         return new_belief
 
